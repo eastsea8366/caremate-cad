@@ -3,6 +3,7 @@ import {CAD} from "./core.js";
 import "./objects.js";
 import "./history.js";
 import "./dimensions.js";
+import "./sidebar.js";
 
 CAD.topSelectable=o=>{let x=o;while(x?.userData?.groupParent)x=x.userData.groupParent;return x;};
 CAD.clearMultiVisuals=()=>{CAD.multiBoxes.forEach(b=>CAD.scene.remove(b));CAD.multiBoxes=[];};
@@ -30,22 +31,25 @@ CAD.refreshSelectedUI=()=>{
   else CAD.$("selNote").textContent=d.locked?"기본 프레임 부품입니다. 구조 다시 배치 시 초기 위치로 돌아갑니다.":"XYZ 화살표 드래그, 중심 좌표 입력, 방향키로 이동할 수 있습니다.";
   CAD.$("infoBody").innerHTML=`${kind}<br>크기 X ${s.x.toFixed(1)} / Y ${s.y.toFixed(1)} / Z ${s.z.toFixed(1)} mm<br>중심 X ${d.px.toFixed(1)} / Y ${d.py.toFixed(1)} / Z ${d.pz.toFixed(1)} mm${extra}`;
   CAD.$("info").style.display="block";CAD.$("copyHub").disabled=d.kind!=="hub";
-  CAD.updateDimensions(CAD.selected);
+  CAD.updateDimensions(CAD.selected);CAD.updateQuickInfo?.(CAD.selected);
 };
 
 CAD.selectObject=(o,preserveMulti=false)=>{
   if(!preserveMulti){CAD.multiSelected=o?[CAD.topSelectable(o)]:[];CAD.clearMultiVisuals();}
   CAD.selected=o?CAD.topSelectable(o):null;
   if(CAD.selectionBox){CAD.scene.remove(CAD.selectionBox);CAD.selectionBox=null;}
-  if(!CAD.selected){CAD.transform.detach();CAD.clearDimensions();CAD.setInputsEnabled(false);CAD.$("copyHub").disabled=true;CAD.$("info").style.display="none";CAD.$("selKind").textContent="-";CAD.$("selSX").textContent=CAD.$("selSY").textContent=CAD.$("selSZ").textContent=CAD.$("selRot").textContent="-";if(!preserveMulti)CAD.multiSelected=[];CAD.updateGroupUI();return;}
-  CAD.selectionBox=new THREE.BoxHelper(CAD.selected,0x1e6fa8);CAD.scene.add(CAD.selectionBox);CAD.transform.attach(CAD.selected);CAD.setInputsEnabled(true);CAD.refreshSelectedUI();CAD.updateGroupUI();
+  if(!CAD.selected){
+    CAD.transform.detach();CAD.clearDimensions();CAD.setInputsEnabled(false);CAD.$("copyHub").disabled=true;CAD.$("info").style.display="none";CAD.$("selKind").textContent="-";CAD.$("selSX").textContent=CAD.$("selSY").textContent=CAD.$("selSZ").textContent=CAD.$("selRot").textContent="-";
+    if(!preserveMulti)CAD.multiSelected=[];CAD.updateGroupUI();CAD.onSelectionCleared?.();return;
+  }
+  CAD.selectionBox=new THREE.BoxHelper(CAD.selected,0x1e6fa8);CAD.scene.add(CAD.selectionBox);CAD.transform.attach(CAD.selected);CAD.setInputsEnabled(true);CAD.refreshSelectedUI();CAD.updateGroupUI();CAD.onObjectSelected?.(CAD.selected);
 };
 CAD.clearSelection=()=>CAD.selectObject(null);
 
 CAD.showMultiSelection=()=>{
   CAD.clearDimensions();CAD.clearMultiVisuals();if(CAD.selectionBox){CAD.scene.remove(CAD.selectionBox);CAD.selectionBox=null;}CAD.transform.detach();CAD.selected=null;CAD.setInputsEnabled(false);CAD.$("copyHub").disabled=true;
   CAD.$("info").style.display="block";CAD.$("infoTitle").textContent=`다중 선택 ${CAD.multiSelected.length}개`;CAD.$("infoBody").innerHTML=CAD.multiSelected.map(o=>`• ${o.userData.name}`).join("<br>");
-  CAD.multiSelected.forEach(o=>{const b=new THREE.BoxHelper(o,0x1e6fa8);CAD.scene.add(b);CAD.multiBoxes.push(b);});CAD.$("selKind").textContent="다중 선택";CAD.$("selSX").textContent=CAD.$("selSY").textContent=CAD.$("selSZ").textContent=CAD.$("selRot").textContent="-";CAD.$("selNote").textContent="Ctrl+G 또는 그룹화 버튼을 누르면 하나의 객체 그룹이 됩니다.";CAD.updateGroupUI();
+  CAD.multiSelected.forEach(o=>{const b=new THREE.BoxHelper(o,0x1e6fa8);CAD.scene.add(b);CAD.multiBoxes.push(b);});CAD.$("selKind").textContent="다중 선택";CAD.$("selSX").textContent=CAD.$("selSY").textContent=CAD.$("selSZ").textContent=CAD.$("selRot").textContent="-";CAD.$("selNote").textContent="Ctrl+G 또는 그룹화 버튼을 누르면 하나의 객체 그룹이 됩니다.";CAD.updateGroupUI();CAD.onMultiSelected?.(CAD.multiSelected);
 };
 
 CAD.toggleMultiObject=o=>{
@@ -90,7 +94,7 @@ CAD.setMode=mode=>{CAD.transform.setMode(mode);CAD.$("moveMode").classList.toggl
 CAD.transform.addEventListener("dragging-changed",e=>{
   CAD.transforming=e.value;CAD.orbit.enabled=!e.value;
   if(e.value&&CAD.selected)CAD.transformStart=CAD.captureTransform(CAD.selected);
-  if(!e.value){CAD.blockSelectUntil=performance.now()+180;if(CAD.selected){CAD.updateDataFromTransform(CAD.selected);CAD.refreshSelectedUI();CAD.selectionBox?.update();if(CAD.transformStart)CAD.pushTransformCommand(CAD.selected,CAD.transformStart,CAD.captureTransform(CAD.selected),CAD.transform.mode==="rotate"?"객체 회전":"객체 이동");CAD.transformStart=null;}}
+  if(!e.value){CAD.blockSelectUntil=performance.now()+180;if(CAD.selected){CAD.updateDataFromTransform(CAD.selected);CAD.refreshSelectedUI();CAD.selectionBox?.update();CAD.setPreviewObject?.(CAD.selected);if(CAD.transformStart)CAD.pushTransformCommand(CAD.selected,CAD.transformStart,CAD.captureTransform(CAD.selected),CAD.transform.mode==="rotate"?"객체 회전":"객체 이동");CAD.transformStart=null;}}
 });
 CAD.transform.addEventListener("objectChange",()=>{if(CAD.selected){CAD.updateDataFromTransform(CAD.selected);CAD.refreshSelectedUI();CAD.selectionBox?.update();}});
 
