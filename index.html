@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CareMate CAD Space — 2500×2500×2500 mm</title>
+<style>
+  :root{
+    --navy:#052445;
+    --navy2:#0b355f;
+    --bg:#eef2f6;
+    --panel:#ffffff;
+    --line:#cfd8e3;
+    --text:#152536;
+    --muted:#66788a;
+    --accent:#1e6fa8;
+    --danger:#c23a35;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:"Malgun Gothic","맑은 고딕",Arial,sans-serif;background:var(--bg);color:var(--text)}
+  #app{display:grid;grid-template-rows:54px 1fr 30px;height:100%}
+  header{
+    display:flex;align-items:center;gap:14px;padding:0 14px;
+    background:var(--navy);color:white;border-bottom:1px solid #00172d;
+  }
+  .brand{font-size:17px;font-weight:700;white-space:nowrap}
+  .brand small{font-weight:400;opacity:.78;margin-left:8px}
+  .toolbar{display:flex;align-items:center;gap:6px;flex:1;justify-content:center}
+  button,.fileLabel{
+    border:1px solid #b8c4cf;background:#fff;color:#183047;border-radius:5px;
+    min-height:32px;padding:6px 10px;font:inherit;font-size:12px;cursor:pointer;
+  }
+  button:hover,.fileLabel:hover{background:#f4f8fb}
+  button.active{background:#dbeeff;border-color:#76a8cf;color:#07345b;font-weight:700}
+  header button{background:#113a61;color:#fff;border-color:#315a7f}
+  header button:hover{background:#194b78}
+  .unitBadge{font-size:12px;background:#fff;color:var(--navy);padding:6px 10px;border-radius:4px;font-weight:700;white-space:nowrap}
+  main{min-height:0;display:grid;grid-template-columns:310px 1fr}
+  aside{
+    min-height:0;overflow:auto;background:var(--panel);border-right:1px solid var(--line);
+    padding:12px;
+  }
+  section{border:1px solid var(--line);border-radius:7px;margin-bottom:10px;overflow:hidden;background:#fff}
+  section h3{margin:0;padding:9px 10px;background:#f6f8fa;border-bottom:1px solid var(--line);font-size:13px;color:var(--navy)}
+  .sectionBody{padding:10px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+  label{font-size:11px;color:var(--muted);display:block}
+  input[type=number],input[type=text],select{
+    width:100%;height:31px;border:1px solid #bcc9d5;border-radius:4px;padding:4px 7px;
+    font:inherit;font-size:12px;color:var(--text);background:#fff;margin-top:3px;
+  }
+  input[type=checkbox]{transform:translateY(1px)}
+  .row{display:flex;gap:7px;align-items:center;margin-top:8px}
+  .row button{flex:1}
+  .checkRow{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px;font-size:12px}
+  .checkRow label{color:var(--text)}
+  .hint{font-size:11px;line-height:1.55;color:var(--muted);margin-top:7px}
+  .spec{
+    display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-size:12px;
+  }
+  .spec b{color:var(--navy)}
+  #viewport{position:relative;min-width:0;min-height:0;background:#dfe5eb}
+  #viewport canvas{display:block;width:100%;height:100%;outline:none}
+  #axisLegend{
+    position:absolute;left:12px;bottom:12px;background:rgba(255,255,255,.92);
+    border:1px solid #c3cfda;border-radius:5px;padding:7px 9px;font-size:11px;line-height:1.65;
+    pointer-events:none;
+  }
+  .x{color:#d62d28;font-weight:700}.y{color:#1d8b46;font-weight:700}.z{color:#245ecf;font-weight:700}
+  #help{
+    position:absolute;right:12px;top:12px;background:rgba(255,255,255,.92);
+    border:1px solid #c3cfda;border-radius:5px;padding:7px 9px;font-size:11px;line-height:1.55;
+    pointer-events:none;max-width:240px;
+  }
+
+  #objectInfoPanel{
+    position:absolute;left:12px;top:12px;z-index:4;
+    width:260px;background:rgba(255,255,255,.96);
+    border:1px solid #9fb0bf;border-radius:7px;padding:10px 11px;
+    font-size:12px;line-height:1.55;display:none;
+    pointer-events:none;
+  }
+  #objectInfoPanel .title{
+    font-weight:700;color:var(--navy);font-size:13px;
+    border-bottom:1px solid #d5dde5;padding-bottom:6px;margin-bottom:7px;
+  }
+  #objectInfoPanel .infoGrid{
+    display:grid;grid-template-columns:72px 1fr;gap:3px 8px;
+  }
+  #objectInfoPanel .value{font-weight:700;color:#183047;font-variant-numeric:tabular-nums}
+  #objectInfoPanel .sizeValue{color:#0b5c94}
+
+  #loading{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:#edf2f6;color:var(--navy);font-size:14px;z-index:5;
+  }
+  footer{
+    display:flex;align-items:center;gap:18px;padding:0 12px;
+    background:#f8fafc;border-top:1px solid var(--line);font-size:11px;color:#42576a;
+  }
+  #statusCoords{font-variant-numeric:tabular-nums}
+  .danger{color:var(--danger)}
+  .full{width:100%}
+  .mutedBox{
+    border-left:3px solid #7da8c9;background:#f5f9fc;padding:7px 8px;
+    font-size:11px;line-height:1.5;color:#435a6e;
+  }
+  #stlInput{display:none}
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">CareMate CAD Space <small>2500 × 2500 × 2500 mm</small></div>
+    <div class="toolbar">
+      <button id="frameView">FRAME</button>
+      <button data-view="iso">ISO</button>
+      <button data-view="top">TOP</button>
+      <button data-view="front">FRONT</button>
+      <button data-view="right">RIGHT</button>
+      <button id="resetView">RESET</button>
+      <button id="measureBtn">2점 측정</button>
+    </div>
+    <div class="unitBadge">1 좌표 단위 = 1 mm</div>
+  </header>
+
+  <main>
+    <aside>
+      <section>
+        <h3>공간 크기</h3>
+        <div class="sectionBody">
+          <div class="grid3">
+            <label>X 폭 (mm)<input id="spaceX" type="number" value="2500" min="100" step="10"></label>
+            <label>Y 길이 (mm)<input id="spaceY" type="number" value="2500" min="100" step="10"></label>
+            <label>Z 높이 (mm)<input id="spaceZ" type="number" value="2500" min="100" step="10"></label>
+          </div>
+          <div class="row"><button id="applySpace">공간 적용</button></div>
+          <div class="hint">좌표계는 <b>X=가로(폭), Y=세로(길이), Z=높이</b>입니다. 내부 계산값은 mm 그대로 사용합니다.</div>
+        </div>
+      </section>
+
+
+      <section>
+        <h3>기본 구조 배치</h3>
+        <div class="sectionBody">
+          <label>구조 이름
+            <input id="structureName" type="text" value="침대 프레임" placeholder="예: CareMate 프레임">
+          </label>
+          <div class="grid3" style="margin-top:7px">
+            <label>외부 폭 X<input id="frameW" type="number" value="900" step="1"></label>
+            <label>외부 길이 Y<input id="frameL" type="number" value="2000" step="1"></label>
+            <label>전체 높이 Z<input id="frameH" type="number" value="250" step="1"></label>
+          </div>
+          <div class="grid3" style="margin-top:7px">
+            <label>각관 폭<input id="railW" type="number" value="20" step="1"></label>
+            <label>각관 높이<input id="railH" type="number" value="40" step="1"></label>
+            <label>힌지 여유(임시)<input id="hingeGap" type="number" value="20" step="1"></label>
+          </div>
+          <div class="grid2" style="margin-top:7px">
+            <label>내부 폭(실측)<input id="innerW" type="number" value="860" step="1" readonly></label>
+            <label>가로바 수(임시)<input id="crossCount" type="number" value="8" min="0" max="20" step="1"></label>
+          </div>
+          <div class="checkRow" style="margin-top:9px">
+            <label><input id="frameCrossToggle" type="checkbox" checked> 임시 가로 지지대</label>
+            <label><input id="frameLegToggle" type="checkbox" checked> 다리 표시</label>
+            <label><input id="frameHingeToggle" type="checkbox" checked> 중앙 접이부 표시</label>
+          </div>
+          <div class="row">
+            <button id="buildFrameBtn">구조 다시 배치</button>
+            <button id="hideFrameBtn">구조 숨김</button>
+          </div>
+          <div class="hint">
+            확정/실측 기준: 외부 900×2000mm, 내부 폭 860mm, 전체 높이 250mm, 하부 여유 약 210mm.
+            20×40 각관 방향은 치수 관계로 추정한 값이며, 가로바·힌지 여유·다리 상세 위치는 아직 임시입니다.
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h3>표시 / 스냅</h3>
+        <div class="sectionBody">
+          <div class="checkRow">
+            <label><input id="gridToggle" type="checkbox" checked> 바닥 그리드</label>
+            <label><input id="boundsToggle" type="checkbox" checked> 공간 외곽선</label>
+            <label><input id="wallsToggle" type="checkbox" checked> 반투명 벽</label>
+            <label><input id="dimToggle" type="checkbox" checked> 2500 치수</label>
+          </div>
+          <div class="grid2" style="margin-top:9px">
+            <label>그리드 간격<input id="gridStep" type="number" value="100" min="1" step="10"></label>
+            <label>스냅 간격<input id="snapStep" type="number" value="10" min="1" step="1"></label>
+          </div>
+          <div class="hint">예: 그리드는 100mm 간격으로 보여도 좌표값 1은 실제 1mm입니다.</div>
+        </div>
+      </section>
+
+      <section>
+        <h3>직육면체 부품 추가</h3>
+        <div class="sectionBody">
+          <div class="grid3">
+            <label>X 크기<input id="boxW" type="number" value="500" step="1"></label>
+            <label>Y 크기<input id="boxD" type="number" value="300" step="1"></label>
+            <label>Z 크기<input id="boxH" type="number" value="100" step="1"></label>
+          </div>
+          <div class="grid3" style="margin-top:7px">
+            <label>X 위치<input id="boxX" type="number" value="0" step="1"></label>
+            <label>Y 위치<input id="boxY" type="number" value="0" step="1"></label>
+            <label>Z 위치<input id="boxZ" type="number" value="0" step="1"></label>
+          </div>
+          <label style="margin-top:7px">이름<input id="boxName" type="text" value="부품 1"></label>
+          <div class="row">
+            <button id="addBox">부품 추가</button>
+            <button id="deleteSelected">선택 삭제</button>
+          </div>
+          <div class="hint">위치는 부품의 왼쪽·앞·아래 모서리를 기준으로 입력합니다.</div>
+        </div>
+      </section>
+
+      <section>
+        <h3>STL 불러오기</h3>
+        <div class="sectionBody">
+          <label class="fileLabel full" for="stlInput">STL 파일 선택</label>
+          <input id="stlInput" type="file" accept=".stl">
+          <div class="hint">불러온 STL은 모델 원래 치수를 mm로 취급합니다. 불러온 뒤 중앙 바닥에 배치됩니다.</div>
+        </div>
+      </section>
+
+      <section>
+        <h3>선택 객체 정보</h3>
+        <div class="sectionBody">
+          <label>객체 이름
+            <input id="selectedNameInput" type="text" value="" placeholder="객체를 선택하세요" disabled>
+          </label>
+          <div class="row">
+            <button id="renameSelectedBtn" disabled>이름 변경</button>
+          </div>
+
+          <div class="spec" style="margin-top:10px">
+            <span>객체</span><b id="selName">없음</b>
+            <span>위치 X</span><b id="selX">-</b>
+            <span>위치 Y</span><b id="selY">-</b>
+            <span>위치 Z</span><b id="selZ">-</b>
+            <span>크기 X</span><b id="selSizeX">-</b>
+            <span>크기 Y</span><b id="selSizeY">-</b>
+            <span>크기 Z</span><b id="selSizeZ">-</b>
+          </div>
+          <div id="selNote" class="hint" style="margin-top:8px">
+            3D 화면에서 객체를 클릭하면 이름·위치·크기가 mm 단위로 표시됩니다.
+          </div>
+        </div>
+      </section>
+
+      <div class="mutedBox">
+        마우스 왼쪽 드래그: 회전<br>
+        마우스 오른쪽 드래그: 이동<br>
+        휠: 확대/축소<br>
+        객체 클릭: 이름·위치·X/Y/Z 크기(mm) 즉시 표시<br>
+        2점 측정: 바닥/벽면 두 점 클릭
+      </div>
+    </aside>
+
+    <div id="viewport">
+      <div id="loading">3D CAD 공간 불러오는 중…</div>
+      <div id="objectInfoPanel">
+        <div class="title" id="objectInfoTitle">선택 객체</div>
+        <div class="infoGrid">
+          <span>종류</span><span class="value" id="objectInfoType">-</span>
+          <span>크기 X</span><span class="value sizeValue" id="objectInfoSizeX">-</span>
+          <span>크기 Y</span><span class="value sizeValue" id="objectInfoSizeY">-</span>
+          <span>크기 Z</span><span class="value sizeValue" id="objectInfoSizeZ">-</span>
+          <span>위치 X</span><span class="value" id="objectInfoX">-</span>
+          <span>위치 Y</span><span class="value" id="objectInfoY">-</span>
+          <span>위치 Z</span><span class="value" id="objectInfoZ">-</span>
+        </div>
+      </div>
+      <div id="axisLegend">
+        <span class="x">X</span> = 가로(폭)<br>
+        <span class="y">Y</span> = 세로(길이)<br>
+        <span class="z">Z</span> = 높이
+      </div>
+      <div id="help">원점은 앞·왼쪽·바닥 모서리 <b>(0,0,0)</b><br>공간은 +X, +Y, +Z 방향으로 생성됩니다.</div>
+    </div>
+  </main>
+
+  <footer>
+    <span id="statusCoords">포인터: X -, Y -, Z - mm</span>
+    <span id="statusMode">모드: 보기</span>
+    <span id="statusInfo">공간: 2500 × 2500 × 2500 mm</span>
+  </footer>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+
+const viewport = document.getElementById('viewport');
+const loading = document.getElementById('loading');
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xe3e8ed);
+
+const camera = new THREE.PerspectiveCamera(42, 1, 1, 30000);
+camera.up.set(0,1,0);
+
+const renderer = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = false;
+viewport.prepend(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.screenSpacePanning = true;
+controls.minDistance = 300;
+controls.maxDistance = 15000;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x73808c, 2.0));
+const dir = new THREE.DirectionalLight(0xffffff, 1.1);
+dir.position.set(3500,5000,3000);
+scene.add(dir);
+
+let SX=2500, SY=2500, SZ=2500;
+let gridGroup=null, boundsGroup=null, wallGroup=null, dimensionGroup=null;
+let frameGroup=null;
+let framePickTargets=[];
+let hoveredFramePart=null;
+let selectable=[];
+let selected=null;
+let selectionBox=null;
+let measuring=false;
+let measurePts=[];
+let measureGroup=new THREE.Group();
+scene.add(measureGroup);
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const pickingPlanes=[];
+const tempV = new THREE.Vector3();
+
+function worldToUser(v){ return {x:v.x, y:v.z, z:v.y}; }
+function userToWorld(x,y,z){ return new THREE.Vector3(x,z,y); }
+
+function disposeObject(obj){
+  obj.traverse(o=>{
+    if(o.geometry) o.geometry.dispose();
+    if(o.material){
+      if(Array.isArray(o.material)) o.material.forEach(m=>m.dispose());
+      else o.material.dispose();
+    }
+    if(o.texture) o.texture.dispose();
+  });
+  if(obj.parent) obj.parent.remove(obj);
+}
+
+function line(points, color, opacity=1){
+  const g = new THREE.BufferGeometry().setFromPoints(points);
+  return new THREE.Line(g, new THREE.LineBasicMaterial({color, transparent:opacity<1, opacity}));
+}
+
+function makeTextSprite(text, opts={}){
+  const fontSize = opts.fontSize || 34;
+  const pad = 12;
+  const canvas=document.createElement('canvas');
+  const ctx=canvas.getContext('2d');
+  ctx.font=`700 ${fontSize}px Malgun Gothic, Arial`;
+  const width=Math.ceil(ctx.measureText(text).width)+pad*2;
+  const height=fontSize+pad*2;
+  canvas.width=width; canvas.height=height;
+  ctx.font=`700 ${fontSize}px Malgun Gothic, Arial`;
+  ctx.fillStyle=opts.bg || 'rgba(255,255,255,.88)';
+  ctx.fillRect(0,0,width,height);
+  ctx.strokeStyle=opts.border || 'rgba(5,36,69,.45)';
+  ctx.strokeRect(.5,.5,width-1,height-1);
+  ctx.fillStyle=opts.color || '#052445';
+  ctx.textBaseline='middle';
+  ctx.fillText(text,pad,height/2);
+  const tex=new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const mat=new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false});
+  const s=new THREE.Sprite(mat);
+  const scale=opts.scale || 260;
+  s.scale.set(scale*(width/height), scale, 1);
+  s.userData.textTexture=tex;
+  return s;
+}
+
+function buildGrid(){
+  if(gridGroup) disposeObject(gridGroup);
+  gridGroup=new THREE.Group();
+  const step=Math.max(1, Number(document.getElementById('gridStep').value)||100);
+  const major=step*5;
+  const minorMat=new THREE.LineBasicMaterial({color:0xb8c2cc, transparent:true, opacity:.52});
+  const majorMat=new THREE.LineBasicMaterial({color:0x7e8c99, transparent:true, opacity:.78});
+  const ptsMinor=[], ptsMajor=[];
+  for(let x=0; x<=SX+0.001; x+=step){
+    const a=new THREE.Vector3(x,0,0), b=new THREE.Vector3(x,0,SY);
+    const arr=(Math.round(x/step)%5===0)?ptsMajor:ptsMinor;
+    arr.push(a,b);
+  }
+  for(let y=0; y<=SY+0.001; y+=step){
+    const a=new THREE.Vector3(0,0,y), b=new THREE.Vector3(SX,0,y);
+    const arr=(Math.round(y/step)%5===0)?ptsMajor:ptsMinor;
+    arr.push(a,b);
+  }
+  if(ptsMinor.length){
+    const g=new THREE.BufferGeometry().setFromPoints(ptsMinor);
+    gridGroup.add(new THREE.LineSegments(g,minorMat));
+  }
+  if(ptsMajor.length){
+    const g=new THREE.BufferGeometry().setFromPoints(ptsMajor);
+    gridGroup.add(new THREE.LineSegments(g,majorMat));
+  }
+  gridGroup.visible=document.getElementById('gridToggle').checked;
+  scene.add(gridGroup);
+}
+
+function buildBounds(){
+  if(boundsGroup) disposeObject(boundsGroup);
+  boundsGroup=new THREE.Group();
+  const c=0x23394d;
+  const verts=[
+    [0,0,0],[SX,0,0],[SX,0,SY],[0,0,SY],
+    [0,SZ,0],[SX,SZ,0],[SX,SZ,SY],[0,SZ,SY]
+  ].map(v=>new THREE.Vector3(...v));
+  const edges=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+  const pts=[];
+  edges.forEach(([a,b])=>pts.push(verts[a],verts[b]));
+  const g=new THREE.BufferGeometry().setFromPoints(pts);
+  boundsGroup.add(new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:c,transparent:true,opacity:.95})));
+
+  // axes: world x = user X, world z = user Y, world y = user Z
+  boundsGroup.add(line([new THREE.Vector3(0,0,0), new THREE.Vector3(Math.min(SX,700),0,0)],0xd62d28));
+  boundsGroup.add(line([new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,Math.min(SY,700))],0x1d8b46));
+  boundsGroup.add(line([new THREE.Vector3(0,0,0), new THREE.Vector3(0,Math.min(SZ,700),0)],0x245ecf));
+
+  const xs=makeTextSprite('X',{color:'#d62d28',scale:90,bg:'rgba(255,255,255,.75)'}); xs.position.set(Math.min(SX,760),20,0); boundsGroup.add(xs);
+  const ys=makeTextSprite('Y',{color:'#1d8b46',scale:90,bg:'rgba(255,255,255,.75)'}); ys.position.set(0,20,Math.min(SY,760)); boundsGroup.add(ys);
+  const zs=makeTextSprite('Z',{color:'#245ecf',scale:90,bg:'rgba(255,255,255,.75)'}); zs.position.set(0,Math.min(SZ,760),0); boundsGroup.add(zs);
+
+  const o=makeTextSprite('(0,0,0)',{scale:95}); o.position.set(-80,80,-80); boundsGroup.add(o);
+
+  boundsGroup.visible=document.getElementById('boundsToggle').checked;
+  scene.add(boundsGroup);
+}
+
+function makeWall(width,height,position,rotation){
+  const geom=new THREE.PlaneGeometry(width,height);
+  const mat=new THREE.MeshBasicMaterial({color:0xf8fbfd,transparent:true,opacity:.20,side:THREE.DoubleSide,depthWrite:false});
+  const mesh=new THREE.Mesh(geom,mat);
+  mesh.position.copy(position);
+  mesh.rotation.set(rotation.x,rotation.y,rotation.z);
+  return mesh;
+}
+
+function buildWalls(){
+  if(wallGroup) disposeObject(wallGroup);
+  wallGroup=new THREE.Group();
+
+  // floor
+  const floor=makeWall(SX,SY,new THREE.Vector3(SX/2,-1,SY/2),new THREE.Euler(-Math.PI/2,0,0));
+  floor.userData.pickSurface='floor'; wallGroup.add(floor);
+  // back: Y = SY (world z)
+  const back=makeWall(SX,SZ,new THREE.Vector3(SX/2,SZ/2,SY),new THREE.Euler(0,0,0));
+  back.userData.pickSurface='back'; wallGroup.add(back);
+  // left: X = 0
+  const left=makeWall(SY,SZ,new THREE.Vector3(0,SZ/2,SY/2),new THREE.Euler(0,Math.PI/2,0));
+  left.userData.pickSurface='left'; wallGroup.add(left);
+
+  pickingPlanes.length=0;
+  wallGroup.children.forEach(m=>pickingPlanes.push(m));
+  wallGroup.visible=document.getElementById('wallsToggle').checked;
+  scene.add(wallGroup);
+}
+
+function makeDimLine(a,b,label,pos){
+  const group=new THREE.Group();
+  group.add(line([a,b],0x235f99));
+  const s=makeTextSprite(label,{scale:120});
+  s.position.copy(pos);
+  group.add(s);
+  return group;
+}
+
+function buildDimensions(){
+  if(dimensionGroup) disposeObject(dimensionGroup);
+  dimensionGroup=new THREE.Group();
+  const off=120;
+  dimensionGroup.add(makeDimLine(
+    new THREE.Vector3(0,20,-off), new THREE.Vector3(SX,20,-off),
+    `${SX} mm`, new THREE.Vector3(SX/2,70,-off)
+  ));
+  dimensionGroup.add(makeDimLine(
+    new THREE.Vector3(-off,20,0), new THREE.Vector3(-off,20,SY),
+    `${SY} mm`, new THREE.Vector3(-off,70,SY/2)
+  ));
+  dimensionGroup.add(makeDimLine(
+    new THREE.Vector3(-off,0,0), new THREE.Vector3(-off,SZ,0),
+    `${SZ} mm`, new THREE.Vector3(-off-20,SZ/2,0)
+  ));
+  dimensionGroup.visible=document.getElementById('dimToggle').checked;
+  scene.add(dimensionGroup);
+}
+
+
+function addFrameBox(group, w, d, h, x, y, z, color=0x303840, opacity=1, name='프레임 부품', role='frame-part'){
+  const part = new THREE.Group();
+  part.position.copy(userToWorld(x,y,z));
+  part.userData.name = name;
+  part.userData.kind = role;
+  part.userData.sizeX = w;
+  part.userData.sizeY = d;
+  part.userData.sizeZ = h;
+  part.userData.posX = x;
+  part.userData.posY = y;
+  part.userData.posZ = z;
+  part.name = name;
+
+  const geom = new THREE.BoxGeometry(w,h,d);
+  const mat = new THREE.MeshStandardMaterial({
+    color, roughness:.72, metalness:.28,
+    transparent: opacity < 1, opacity
+  });
+  const mesh = new THREE.Mesh(geom,mat);
+  mesh.position.set(w/2,h/2,d/2);
+  mesh.userData.ownerPart = part;
+  part.add(mesh);
+
+  const edgeMat = new THREE.LineBasicMaterial({
+    color:0x101820, transparent:true, opacity:.75
+  });
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geom), edgeMat);
+  edges.position.copy(mesh.position);
+  part.add(edges);
+
+  // 클릭 판정용 투명 히트박스.
+  // 실제 형상보다 최소 24mm 크게 잡아서 20×40 각관 외측면도 쉽게 선택되게 함.
+  const pickPad = 24;
+  const pickGeom = new THREE.BoxGeometry(
+    Math.max(w + pickPad, 44),
+    Math.max(h + pickPad, 64),
+    Math.max(d + pickPad, 44)
+  );
+  const pickMat = new THREE.MeshBasicMaterial({
+    transparent:true,
+    opacity:0,
+    depthWrite:false,
+    side:THREE.DoubleSide
+  });
+  const pickMesh = new THREE.Mesh(pickGeom,pickMat);
+  pickMesh.position.set(w/2,h/2,d/2);
+  pickMesh.userData.ownerPart = part;
+  pickMesh.userData.isFramePickTarget = true;
+  part.add(pickMesh);
+  framePickTargets.push(pickMesh);
+
+  group.add(part);
+  selectable.push(part);
+  return part;
+}
+
+function addFrameLabel(group, text, userX, userY, userZ, scale=95, color='#052445'){
+  const s=makeTextSprite(text,{scale,color,bg:'rgba(255,255,255,.90)'});
+  s.position.copy(userToWorld(userX,userY,userZ));
+  group.add(s);
+}
+
+function buildBedFrame(){
+  if(frameGroup){
+    if(selected && (selected === frameGroup || selected.userData?.kind === 'frame-part')){
+      setSelected(null);
+    }
+    selectable = selectable.filter(x=>x!==frameGroup && x.userData?.kind!=='frame-part');
+    framePickTargets = [];
+    hoveredFramePart = null;
+    renderer.domElement.style.cursor = 'default';
+    disposeObject(frameGroup);
+    frameGroup=null;
+  }
+
+  const FW = Math.max(100, Number(document.getElementById('frameW').value)||900);
+  const FL = Math.max(100, Number(document.getElementById('frameL').value)||2000);
+  const FH = Math.max(50, Number(document.getElementById('frameH').value)||250);
+  const RW = Math.max(5, Number(document.getElementById('railW').value)||20);   // user X/Y thickness
+  const RH = Math.max(5, Number(document.getElementById('railH').value)||40);  // user Z height
+  const HG = Math.max(0, Number(document.getElementById('hingeGap').value)||20);
+  const crossCount = Math.max(0, Math.round(Number(document.getElementById('crossCount').value)||0));
+  const showCross = document.getElementById('frameCrossToggle').checked;
+  const showLegs = document.getElementById('frameLegToggle').checked;
+  const showHinge = document.getElementById('frameHingeToggle').checked;
+
+  const x0 = (SX-FW)/2;
+  const y0 = (SY-FL)/2;
+  const railZ = FH-RH;
+  const innerW = FW - 2*RW;
+  document.getElementById('innerW').value = innerW.toFixed(0);
+
+  frameGroup = new THREE.Group();
+  const structureName=(document.getElementById('structureName').value||'기본 구조').trim()||'기본 구조';
+  frameGroup.userData.name=structureName;
+  frameGroup.userData.kind='bed-frame';
+  frameGroup.name=structureName;
+
+  // 좌/우 외곽 길이 레일: 중앙 접이부를 피해서 2분할.
+  const halfLen = Math.max(1,(FL-HG)/2);
+  addFrameBox(frameGroup,RW,halfLen,RH,x0,y0,railZ,0x2f343a,1,'좌측 외곽레일 A','frame-part');
+  addFrameBox(frameGroup,RW,halfLen,RH,x0,y0+halfLen+HG,railZ,0x2f343a,1,'좌측 외곽레일 B','frame-part');
+  addFrameBox(frameGroup,RW,halfLen,RH,x0+FW-RW,y0,railZ,0x2f343a,1,'우측 외곽레일 A','frame-part');
+  addFrameBox(frameGroup,RW,halfLen,RH,x0+FW-RW,y0+halfLen+HG,railZ,0x2f343a,1,'우측 외곽레일 B','frame-part');
+
+  // 앞/뒤 가로 프레임: 측면 레일 사이.
+  addFrameBox(frameGroup,innerW,RW,RH,x0+RW,y0,railZ,0x2f343a,1,'앞쪽 가로 프레임','frame-part');
+  addFrameBox(frameGroup,innerW,RW,RH,x0+RW,y0+FL-RW,railZ,0x2f343a,1,'뒤쪽 가로 프레임','frame-part');
+
+  // 임시 가로 지지대: 실제 개수/간격 미확정, 확인용 표시.
+  if(showCross && crossCount>0){
+    const barH = Math.min(20,RH*0.55);
+    const barD = Math.min(20,RW);
+    for(let i=1;i<=crossCount;i++){
+      let yy = y0 + (FL*(i/(crossCount+1))) - barD/2;
+      // 중앙 힌지 여유에 걸리면 좌/우로 이동
+      const mid=y0+FL/2;
+      if(Math.abs((yy+barD/2)-mid) < HG/2 + barD){
+        yy += ((yy+barD/2)<mid ? -1 : 1)*(HG/2+barD);
+      }
+      yy = THREE.MathUtils.clamp(yy,y0+RW,y0+FL-RW-barD);
+      addFrameBox(frameGroup,innerW,barD,barH,x0+RW,yy,railZ+RH-barH,0x697681,.92,`가로 지지대 ${i}`,'frame-part');
+    }
+  }
+
+  // 다리: 정확한 공장 위치가 아니라 구조 위치 확인용.
+  if(showLegs){
+    const legX = 40, legY = 40;
+    const legH = railZ;
+    const insetY = 45;
+    const legs = [
+      [x0, y0+insetY],
+      [x0+FW-legX, y0+insetY],
+      [x0, y0+FL-insetY-legY],
+      [x0+FW-legX, y0+FL-insetY-legY]
+    ];
+    // 중앙부 보조 다리 2개 — 임시 표시
+    const midY=y0+FL/2-legY/2;
+    legs.push([x0+FW*.25-legX/2,midY],[x0+FW*.75-legX/2,midY]);
+    legs.forEach(([lx,ly],idx)=>addFrameBox(
+      frameGroup,legX,legY,legH,lx,ly,0,0x3a4046,1,
+      idx < 4 ? `외곽 다리 ${idx+1}` : `중앙 보조 다리 ${idx-3}`,
+      'frame-part'
+    ));
+  }
+
+  // 접이 중심 표시 (실제 힌지 형상 아님)
+  if(showHinge){
+    const midY=y0+FL/2;
+    const mat=new THREE.LineBasicMaterial({color:0xc23a35});
+    const pts=[
+      new THREE.Vector3(x0,railZ+RH+6,midY),
+      new THREE.Vector3(x0+FW,railZ+RH+6,midY)
+    ];
+    const g=new THREE.BufferGeometry().setFromPoints(pts);
+    frameGroup.add(new THREE.Line(g,mat));
+    addFrameLabel(frameGroup,'중앙 접이부 (형상 임시)',x0+FW/2,midY,FH+95,105,'#b12c27');
+  }
+
+  // 실측/확정 치수 라벨
+  addFrameLabel(frameGroup,`외부 폭 ${FW} mm`,x0+FW/2,y0-90,FH+40,95);
+  addFrameLabel(frameGroup,`외부 길이 ${FL} mm`,x0-120,y0+FL/2,FH+40,95);
+  addFrameLabel(frameGroup,`내부 폭 ${innerW.toFixed(0)} mm`,x0+FW/2,y0+150,FH+70,90,'#1e6fa8');
+  addFrameLabel(frameGroup,`상면 Z=${FH} mm`,x0+FW+120,y0+150,FH,85,'#245ecf');
+
+  scene.add(frameGroup);
+  setSelected(null);
+  document.getElementById('hideFrameBtn').textContent='구조 숨김';
+}
+
+function frameFocus(){
+  if(!frameGroup){ buildBedFrame(); }
+  const FW=Number(document.getElementById('frameW').value)||900;
+  const FL=Number(document.getElementById('frameL').value)||2000;
+  const FH=Number(document.getElementById('frameH').value)||250;
+  const c=userToWorld(SX/2,SY/2,FH*.5);
+  controls.target.copy(c);
+  camera.position.copy(userToWorld(SX/2+1450,SY/2-1600,FH+1200));
+  camera.lookAt(c);
+  controls.update();
+}
+
+
+function rebuildSpace(resetCam=false){
+  SX=Number(document.getElementById('spaceX').value)||2500;
+  SY=Number(document.getElementById('spaceY').value)||2500;
+  SZ=Number(document.getElementById('spaceZ').value)||2500;
+  buildGrid(); buildBounds(); buildWalls(); buildDimensions();
+  document.getElementById('statusInfo').textContent=`공간: ${SX} × ${SY} × ${SZ} mm`;
+  controls.target.set(SX/2,SZ*.35,SY/2);
+  if(resetCam) setView('iso');
+}
+
+function setView(view){
+  const c=new THREE.Vector3(SX/2,SZ/2,SY/2);
+  const d=Math.max(SX,SY,SZ)*1.9;
+  controls.target.copy(c);
+  if(view==='top') camera.position.set(c.x, SZ+d, c.z+0.01);
+  else if(view==='front') camera.position.set(c.x, c.y, -d);
+  else if(view==='right') camera.position.set(SX+d, c.y, c.z);
+  else camera.position.set(SX+d*.72, SZ+d*.58, SY+d*.72);
+  camera.lookAt(c);
+  controls.update();
+}
+
+function updateRendererSize(){
+  const w=viewport.clientWidth, h=viewport.clientHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize',updateRendererSize);
+
+
+function resolveSelectableFromHit(hitObject){
+  if(!hitObject) return null;
+
+  // 투명 클릭 히트박스는 ownerPart를 바로 사용
+  if(hitObject.userData?.ownerPart){
+    return hitObject.userData.ownerPart;
+  }
+
+  let o=hitObject;
+  while(o){
+    if(o.userData?.ownerPart) return o.userData.ownerPart;
+    if(selectable.includes(o)) return o;
+    o=o.parent;
+  }
+  return null;
+}
+
+function pickSelectableAtEvent(ev){
+  pointerNDC(ev);
+  raycaster.setFromCamera(pointer,camera);
+
+  // 프레임용 넓은 클릭영역을 우선 검사
+  const frameHits = raycaster.intersectObjects(framePickTargets,false);
+  if(frameHits.length){
+    const part = resolveSelectableFromHit(frameHits[0].object);
+    if(part) return part;
+  }
+
+  // 나머지 일반 객체
+  const hits=raycaster.intersectObjects(selectable,true);
+  if(hits.length){
+    return resolveSelectableFromHit(hits[0].object);
+  }
+  return null;
+}
+
+function pointerNDC(ev){
+  const r=renderer.domElement.getBoundingClientRect();
+  pointer.x=((ev.clientX-r.left)/r.width)*2-1;
+  pointer.y=-((ev.clientY-r.top)/r.height)*2+1;
+}
+
+function hitPoint(ev){
+  pointerNDC(ev);
+  raycaster.setFromCamera(pointer,camera);
+  const surfaces = pickingPlanes.filter(x=>x.visible);
+  let hits=raycaster.intersectObjects(surfaces,false);
+  if(!hits.length){
+    // measurement must still work even if walls visually hidden
+    hits=raycaster.intersectObjects(pickingPlanes,false);
+  }
+  if(!hits.length) return null;
+  const p=hits[0].point.clone();
+  const snap=Math.max(1,Number(document.getElementById('snapStep').value)||10);
+  p.x=Math.round(p.x/snap)*snap;
+  p.y=Math.round(p.y/snap)*snap;
+  p.z=Math.round(p.z/snap)*snap;
+  p.x=THREE.MathUtils.clamp(p.x,0,SX);
+  p.y=THREE.MathUtils.clamp(p.y,0,SZ);
+  p.z=THREE.MathUtils.clamp(p.z,0,SY);
+  return p;
+}
+
+renderer.domElement.addEventListener('pointermove',ev=>{
+  const p=hitPoint(ev);
+  if(p){
+    const u=worldToUser(p);
+    document.getElementById('statusCoords').textContent=
+      `포인터: X ${u.x.toFixed(0)}, Y ${u.y.toFixed(0)}, Z ${u.z.toFixed(0)} mm`;
+  }
+
+  if(!measuring){
+    const target=pickSelectableAtEvent(ev);
+    if(target){
+      hoveredFramePart=target.userData?.kind==='frame-part' ? target : null;
+      renderer.domElement.style.cursor='pointer';
+      document.getElementById('statusMode').textContent=
+        `선택 가능: ${target.userData?.name||target.name||'객체'}`;
+    }else{
+      hoveredFramePart=null;
+      renderer.domElement.style.cursor='default';
+      document.getElementById('statusMode').textContent='모드: 보기';
+    }
+  }
+});
+
+let selectPointerDown=null;
+
+renderer.domElement.addEventListener('pointerdown',ev=>{
+  if(ev.button!==0) return;
+  selectPointerDown={x:ev.clientX,y:ev.clientY};
+});
+
+renderer.domElement.addEventListener('pointerup',ev=>{
+  if(ev.button!==0 || !selectPointerDown) return;
+
+  const dx=ev.clientX-selectPointerDown.x;
+  const dy=ev.clientY-selectPointerDown.y;
+  const moved=Math.hypot(dx,dy);
+  selectPointerDown=null;
+
+  // 화면 회전 드래그는 선택으로 처리하지 않음
+  if(moved>6) return;
+
+  if(measuring){
+    const p=hitPoint(ev);
+    if(p) addMeasurePoint(p);
+    return;
+  }
+
+  const target=pickSelectableAtEvent(ev);
+  setSelected(target||null);
+});
+
+function setSelected(obj){
+  selected=obj;
+
+  if(selectionBox){
+    scene.remove(selectionBox);
+    selectionBox=null;
+  }
+
+  const infoPanel=document.getElementById('objectInfoPanel');
+  const nameInput=document.getElementById('selectedNameInput');
+  const renameBtn=document.getElementById('renameSelectedBtn');
+
+  if(obj){
+    // 투명 클릭영역이 아니라 실제 형상을 기준으로 선택 박스 표시
+    let highlightTarget=obj;
+    if(obj.userData?.kind==='frame-part'){
+      const realMesh=obj.children.find(
+        c=>c.isMesh && !c.userData?.isFramePickTarget
+      );
+      if(realMesh) highlightTarget=realMesh;
+    }
+    selectionBox=new THREE.BoxHelper(highlightTarget,0x1e6fa8);
+    scene.add(selectionBox);
+
+    let ux,uy,uz;
+    if(Number.isFinite(obj.userData?.posX)){
+      ux=obj.userData.posX;
+      uy=obj.userData.posY;
+      uz=obj.userData.posZ;
+    }else{
+      const wp=new THREE.Vector3();
+      obj.getWorldPosition(wp);
+      const u=worldToUser(wp);
+      ux=u.x; uy=u.y; uz=u.z;
+    }
+
+    let sx=obj.userData?.sizeX;
+    let sy=obj.userData?.sizeY;
+    let sz=obj.userData?.sizeZ;
+
+    if(!Number.isFinite(sx) || !Number.isFinite(sy) || !Number.isFinite(sz)){
+      const bbox=new THREE.Box3().setFromObject(obj);
+      const ws=new THREE.Vector3();
+      bbox.getSize(ws);
+      sx=ws.x; sy=ws.z; sz=ws.y;
+    }
+
+    const objName=obj.userData?.name||obj.name||'객체';
+    let typeText='일반 객체';
+    if(obj.userData?.kind==='frame-part') typeText='기본 구조 부품';
+    else if(obj.userData?.kind==='box') typeText='직육면체 부품';
+    else if(obj.userData?.kind==='stl') typeText='STL 모델';
+
+    // 왼쪽 패널
+    document.getElementById('selName').textContent=objName;
+    document.getElementById('selX').textContent=`${ux.toFixed(1)} mm`;
+    document.getElementById('selY').textContent=`${uy.toFixed(1)} mm`;
+    document.getElementById('selZ').textContent=`${uz.toFixed(1)} mm`;
+    document.getElementById('selSizeX').textContent=`${sx.toFixed(1)} mm`;
+    document.getElementById('selSizeY').textContent=`${sy.toFixed(1)} mm`;
+    document.getElementById('selSizeZ').textContent=`${sz.toFixed(1)} mm`;
+
+    nameInput.disabled=false;
+    renameBtn.disabled=false;
+    nameInput.value=objName;
+
+    // 3D 화면 오버레이
+    document.getElementById('objectInfoTitle').textContent=objName;
+    document.getElementById('objectInfoType').textContent=typeText;
+    document.getElementById('objectInfoSizeX').textContent=`${sx.toFixed(1)} mm`;
+    document.getElementById('objectInfoSizeY').textContent=`${sy.toFixed(1)} mm`;
+    document.getElementById('objectInfoSizeZ').textContent=`${sz.toFixed(1)} mm`;
+    document.getElementById('objectInfoX').textContent=`${ux.toFixed(1)} mm`;
+    document.getElementById('objectInfoY').textContent=`${uy.toFixed(1)} mm`;
+    document.getElementById('objectInfoZ').textContent=`${uz.toFixed(1)} mm`;
+    infoPanel.style.display='block';
+
+    document.getElementById('selNote').textContent=
+      '선택한 객체의 모델 기준 치수입니다. X=폭, Y=길이, Z=높이.';
+  }else{
+    document.getElementById('selName').textContent='없음';
+    ['selX','selY','selZ','selSizeX','selSizeY','selSizeZ'].forEach(
+      id=>document.getElementById(id).textContent='-'
+    );
+    nameInput.value='';
+    nameInput.disabled=true;
+    renameBtn.disabled=true;
+    infoPanel.style.display='none';
+    document.getElementById('selNote').textContent=
+      '3D 화면에서 객체를 클릭하면 이름·위치·크기가 mm 단위로 표시됩니다.';
+  }
+}
+
+
+
+function addMeasurePoint(p){
+  measurePts.push(p);
+  const marker=new THREE.Mesh(
+    new THREE.SphereGeometry(18,18,12),
+    new THREE.MeshBasicMaterial({color:0xc23a35,depthTest:false})
+  );
+  marker.position.copy(p); measureGroup.add(marker);
+  if(measurePts.length===2){
+    const [a,b]=measurePts;
+    measureGroup.add(line([a,b],0xc23a35));
+    const dist=a.distanceTo(b);
+    const mid=a.clone().add(b).multiplyScalar(.5);
+    const s=makeTextSprite(`${dist.toFixed(1)} mm`,{scale:135,color:'#a32020'});
+    s.position.copy(mid).add(new THREE.Vector3(0,60,0)); measureGroup.add(s);
+    measurePts=[];
+  }
+}
+
+function clearMeasure(){
+  while(measureGroup.children.length) disposeObject(measureGroup.children[0]);
+  measurePts=[];
+}
+
+document.getElementById('measureBtn').onclick=()=>{
+  measuring=!measuring;
+  document.getElementById('measureBtn').classList.toggle('active',measuring);
+  document.getElementById('statusMode').textContent=measuring?'모드: 2점 측정':'모드: 보기';
+  controls.enabled=!measuring;
+  if(!measuring) clearMeasure();
+};
+
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
+document.getElementById('resetView').onclick=()=>setView('iso');
+document.getElementById('applySpace').onclick=()=>rebuildSpace(true);
+document.getElementById('gridToggle').onchange=e=>{ if(gridGroup) gridGroup.visible=e.target.checked; };
+document.getElementById('boundsToggle').onchange=e=>{ if(boundsGroup) boundsGroup.visible=e.target.checked; };
+document.getElementById('wallsToggle').onchange=e=>{ if(wallGroup) wallGroup.visible=e.target.checked; };
+document.getElementById('dimToggle').onchange=e=>{ if(dimensionGroup) dimensionGroup.visible=e.target.checked; };
+document.getElementById('gridStep').onchange=buildGrid;
+
+document.getElementById('buildFrameBtn').onclick=()=>buildBedFrame();
+
+document.getElementById('renameSelectedBtn').onclick=()=>{
+  if(!selected) return;
+  const input=document.getElementById('selectedNameInput');
+  const newName=(input.value||'').trim();
+  if(!newName) return;
+  selected.userData.name=newName;
+  selected.name=newName;
+  setSelected(selected);
+};
+
+document.getElementById('selectedNameInput').addEventListener('keydown',ev=>{
+  if(ev.key==='Enter'){
+    ev.preventDefault();
+    document.getElementById('renameSelectedBtn').click();
+  }
+});
+
+document.getElementById('structureName').addEventListener('keydown',ev=>{
+  if(ev.key==='Enter'){
+    ev.preventDefault();
+    buildBedFrame();
+  }
+});
+
+document.getElementById('frameView').onclick=()=>frameFocus();
+document.getElementById('hideFrameBtn').onclick=()=>{
+  if(!frameGroup) return;
+  frameGroup.visible=!frameGroup.visible;
+  document.getElementById('hideFrameBtn').textContent=frameGroup.visible?'구조 숨김':'구조 표시';
+};
+['frameCrossToggle','frameLegToggle','frameHingeToggle'].forEach(id=>{
+  document.getElementById(id).onchange=()=>buildBedFrame();
+});
+
+
+document.getElementById('addBox').onclick=()=>{
+  const w=Math.max(1,Number(document.getElementById('boxW').value)||100);
+  const d=Math.max(1,Number(document.getElementById('boxD').value)||100);
+  const h=Math.max(1,Number(document.getElementById('boxH').value)||100);
+  const x=Number(document.getElementById('boxX').value)||0;
+  const y=Number(document.getElementById('boxY').value)||0;
+  const z=Number(document.getElementById('boxZ').value)||0;
+  const name=document.getElementById('boxName').value.trim()||`부품 ${selectable.length+1}`;
+
+  const group=new THREE.Group();
+  const geom=new THREE.BoxGeometry(w,h,d);
+  const mat=new THREE.MeshStandardMaterial({color:0x9aa9b6,roughness:.75,metalness:.05,transparent:true,opacity:.72});
+  const mesh=new THREE.Mesh(geom,mat);
+  mesh.position.set(w/2,h/2,d/2);
+  group.add(mesh);
+  const edges=new THREE.LineSegments(new THREE.EdgesGeometry(geom),new THREE.LineBasicMaterial({color:0x183047}));
+  edges.position.copy(mesh.position); group.add(edges);
+  group.position.copy(userToWorld(x,y,z));
+  group.userData.name=name;
+  group.userData.kind='box';
+  group.userData.sizeX=w;
+  group.userData.sizeY=d;
+  group.userData.sizeZ=h;
+  group.userData.posX=x;
+  group.userData.posY=y;
+  group.userData.posZ=z;
+  group.name=name;
+  scene.add(group);
+  selectable.push(group);
+  setSelected(group);
+};
+
+document.getElementById('deleteSelected').onclick=()=>{
+  if(!selected) return;
+  if(selected.userData?.kind==='frame-part'){
+    document.getElementById('selNote').textContent='기본 구조 부품은 개별 삭제하지 않도록 잠겨 있습니다.';
+    return;
+  }
+  selectable=selectable.filter(x=>x!==selected);
+  const doomed=selected; setSelected(null); disposeObject(doomed);
+};
+
+document.getElementById('stlInput').addEventListener('change',async ev=>{
+  const file=ev.target.files?.[0];
+  if(!file) return;
+  const buffer=await file.arrayBuffer();
+  const loader=new STLLoader();
+  const geom=loader.parse(buffer);
+  geom.computeVertexNormals();
+  geom.computeBoundingBox();
+  const box=geom.boundingBox;
+  const size=new THREE.Vector3(); box.getSize(size);
+  geom.translate(-box.min.x,-box.min.y,-box.min.z);
+
+  const mat=new THREE.MeshStandardMaterial({color:0x667a8c,roughness:.72,metalness:.08});
+  const mesh=new THREE.Mesh(geom,mat);
+  const group=new THREE.Group();
+  group.add(mesh);
+  group.position.set(Math.max(0,(SX-size.x)/2),0,Math.max(0,(SY-size.z)/2));
+  group.userData.name=file.name;
+  group.userData.kind='stl';
+  group.userData.sizeX=size.x;
+  group.userData.sizeY=size.z;
+  group.userData.sizeZ=size.y;
+  const stlUserPos = worldToUser(group.position);
+  group.userData.posX=stlUserPos.x;
+  group.userData.posY=stlUserPos.y;
+  group.userData.posZ=stlUserPos.z;
+  group.name=file.name;
+  scene.add(group);
+  selectable.push(group);
+  setSelected(group);
+  ev.target.value='';
+});
+
+rebuildSpace(false);
+buildBedFrame();
+updateRendererSize();
+frameFocus();
+loading.remove();
+
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  if(selectionBox && selected) selectionBox.update();
+  renderer.render(scene,camera);
+}
+animate();
+</script>
+</body>
+</html>
