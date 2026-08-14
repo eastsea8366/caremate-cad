@@ -73,14 +73,17 @@
     <div class="g2" style="margin-top:7px"><label>이동 스냅(mm)<input id="moveSnap" type="number" min="0" step=".1" value="1"></label><label>회전 스냅(°)<input id="rotSnap" type="number" min="0" step="1" value="5"></label></div>
     <div class="row"><button id="deleteObj" disabled>선택 삭제</button><button id="detach">선택 해제</button></div>
     <div class="spec" style="margin-top:8px"><span>종류</span><b id="selKind">-</b><span>크기 X</span><b id="selSX">-</b><span>크기 Y</span><b id="selSY">-</b><span>크기 Z</span><b id="selSZ">-</b><span>회전 X/Y/Z</span><b id="selRot">-</b></div>
-    <div id="selNote" class="hint">객체를 클릭하면 XYZ 이동 화살표가 나타납니다. 화살표를 끌거나 중심 좌표를 직접 입력하세요.</div>
+    <div id="selNote" class="hint">객체를 클릭하면 XYZ 이동축과 X·Y·Z 실제 치수(mm)가 객체 주변에 표시됩니다.</div>
   </div></div>
 </aside>
 
 <div id="vp">
   <div id="info"><strong id="infoTitle">선택 객체</strong><div id="infoBody"></div></div>
-  <div id="help">객체 클릭 → 선택<br><b>이동</b>: 빨강 X / 초록 Y / 파랑 Z 화살표<br><b>회전</b>: 회전 링<br><b>다중 선택</b>: Shift+클릭</div>
+  <div id="help">객체 클릭 → 선택 + XYZ 치수 표시<br><b>이동</b>: 빨강 X / 초록 Y / 파랑 Z 화살표<br><b>회전</b>: 회전 링<br><b>다중 선택</b>: Shift+클릭</div>
   <div id="shortcutPanel"><strong>CAD 단축키</strong><div class="shortgrid">
+    <kbd>Ctrl+Z</kbd><span>실행 취소</span><kbd>Ctrl+Y</kbd><span>다시 실행</span>
+    <kbd>Ctrl+Shift+Z</kbd><span>다시 실행</span><kbd>Ctrl+C</kbd><span>객체 복사</span>
+    <kbd>Ctrl+V</kbd><span>객체 붙여넣기</span><kbd>Ctrl+D</kbd><span>선택 객체 즉시 복제</span>
     <kbd>W</kbd><span>이동 모드</span><kbd>E</kbd><span>회전 모드</span>
     <kbd>Shift+클릭</kbd><span>다중 선택</span><kbd>Ctrl+G</kbd><span>그룹화</span>
     <kbd>Ctrl+Shift+G</kbd><span>그룹 해제</span><kbd>Delete</kbd><span>선택 삭제</span>
