@@ -1,53 +1,577 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CareMate CAD</title><style>
-*{box-sizing:border-box}html,body{margin:0;height:100%;font-family:"Malgun Gothic",Arial,sans-serif;color:#173047;background:#e7ecf1;overflow:hidden}
-#app{height:100%;display:grid;grid-template-rows:52px 1fr 28px}header{display:flex;align-items:center;gap:8px;padding:0 10px;background:#052445;color:#fff}
-header b{font-size:16px;margin-right:auto}button,input,select{font:inherit;font-size:12px}button{padding:6px 9px;border:1px solid #b9c6d1;border-radius:5px;background:#fff;cursor:pointer}
-header button{background:#123c64;color:#fff;border-color:#315d83}header span{background:#fff;color:#052445;padding:6px 9px;border-radius:4px;font-size:12px;font-weight:700}
-main{min-height:0;display:grid;grid-template-columns:310px 1fr}aside{overflow:auto;background:#fff;border-right:1px solid #cbd5df;padding:8px}
-.sec{border:1px solid #cbd5df;border-radius:6px;margin-bottom:8px;overflow:hidden}.sec h3{margin:0;padding:8px;background:#f4f7f9;color:#052445;font-size:13px}.pad{padding:8px}
-.g2,.g3{display:grid;gap:6px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}label{display:block;font-size:11px;color:#63778a}
-input,select{width:100%;height:29px;margin-top:3px;border:1px solid #b9c6d1;border-radius:4px;padding:3px 6px;background:#fff}
-.row{display:flex;gap:6px;margin-top:7px}.row button{flex:1}.hint{font-size:10.5px;line-height:1.45;color:#63778a;margin-top:6px}.spec{display:grid;grid-template-columns:70px 1fr;gap:3px 8px;font-size:11px}.spec b{color:#0b5c94}
-#vp{position:relative;min-width:0;min-height:0}canvas{display:block;width:100%;height:100%}
-#info{position:absolute;left:10px;top:10px;display:none;background:#fffffff2;border:1px solid #9eafbd;border-radius:6px;padding:9px;width:245px;font-size:11px;z-index:3}
-#info strong{display:block;color:#052445;border-bottom:1px solid #d5dee6;padding-bottom:5px;margin-bottom:5px}
-#hint{position:absolute;right:10px;top:10px;background:#fffffff0;border:1px solid #c1ccd5;border-radius:5px;padding:7px;font-size:10.5px}
-footer{background:#f8fafb;border-top:1px solid #cbd5df;padding:5px 9px;font-size:10.5px}
-</style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"}}</script></head>
-<body><div id="app"><header><b>CareMate CAD</b><button data-v="iso">ISO</button><button data-v="top">TOP</button><button data-v="front">FRONT</button><button data-v="right">RIGHT</button><button id="measure">2점 측정</button><span>1 좌표 단위 = 1 mm</span></header>
-<main><aside>
-<div class="sec"><h3>공간</h3><div class="pad"><div class="g3"><label>X<input id="sx" type="number" value="2500"></label><label>Y<input id="sy" type="number" value="2500"></label><label>Z<input id="sz" type="number" value="2500"></label></div><div class="row"><button id="spaceBtn">적용</button></div></div></div>
-<div class="sec"><h3>기본 구조</h3><div class="pad"><label>구조 이름<input id="fn" value="침대 프레임"></label><div class="g3"><label>폭 X<input id="fw" type="number" value="900"></label><label>길이 Y<input id="fl" type="number" value="2000"></label><label>높이 Z<input id="fh" type="number" value="250"></label></div><div class="g3"><label>각관 폭<input id="rw" type="number" value="20"></label><label>각관 높이<input id="rh" type="number" value="40"></label><label>가로바 수<input id="cc" type="number" value="8"></label></div><div class="row"><button id="frameBtn">구조 다시 배치</button></div><div class="hint">외부 900×2000, 내부 폭 860, 높이 250mm 기준. 가로바 간격은 임시입니다.</div></div></div>
-<div class="sec"><h3>직육면체 추가</h3><div class="pad"><label>이름<input id="bn" value="부품"></label><div class="g3"><label>X 크기<input id="bw" type="number" value="500"></label><label>Y 크기<input id="bd" type="number" value="300"></label><label>Z 크기<input id="bh" type="number" value="100"></label></div><div class="g3"><label>X 위치<input id="bx" type="number" value="0"></label><label>Y 위치<input id="by" type="number" value="0"></label><label>Z 위치<input id="bz" type="number" value="0"></label></div><div class="row"><button id="boxBtn">추가</button></div></div></div>
-<div class="sec"><h3>원형 허브 추가</h3><div class="pad"><label>허브 이름<input id="hn" value="BP-Hub-8"></label><div class="g3"><label>외경 Ø<input id="hod" type="number" step=".1" value="25.5"></label><label>두께 T<input id="ht" type="number" step=".1" value="10"></label><label>축홀 Ø<input id="hb" type="number" step=".1" value="8"></label></div><div class="g2"><label>PCD<input id="hpcd" type="number" step=".1" value="20"></label><label>축 방향<select id="ha"><option>X</option><option>Y</option><option>Z</option></select></label></div><div class="g3"><label>중심 X<input id="hx" type="number" value="1250"></label><label>중심 Y<input id="hy" type="number" value="1250"></label><label>중심 Z<input id="hz" type="number" value="300"></label></div><div class="row"><button id="hubBtn">허브 추가</button><button id="hubCopy" disabled>선택 허브 복제</button></div><div class="hint">기본: Ø25.5×10T / Ø8 / PCD20 / 전면 4-M3 + 4-Ø3. 전면 홀은 위치 마커이며 측면 4-M4는 사양 정보로 관리합니다.</div></div></div>
-<div class="sec"><h3>STL</h3><div class="pad"><input id="stl" type="file" accept=".stl"></div></div>
-<div class="sec"><h3>선택 객체</h3><div class="pad"><label>이름<input id="sn" disabled></label><div class="row"><button id="rename" disabled>이름 변경</button><button id="del" disabled>삭제</button></div><div class="spec" style="margin-top:7px"><span>종류</span><b id="sk">-</b><span>크기 X</span><b id="ssx">-</b><span>크기 Y</span><b id="ssy">-</b><span>크기 Z</span><b id="ssz">-</b><span>위치 X</span><b id="spx">-</b><span>위치 Y</span><b id="spy">-</b><span>위치 Z</span><b id="spz">-</b></div><div id="note" class="hint">객체를 클릭하세요.</div></div></div>
-</aside><div id="vp"><div id="info"><strong id="it">선택 객체</strong><div id="ib"></div></div><div id="hint">X=가로 · Y=길이 · Z=높이<br>객체 클릭 → 치수/위치 표시</div></div></main><footer id="status">모드: 보기</footer></div>
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CareMate CAD</title>
+<style>
+:root{--navy:#052445;--line:#c9d4de;--text:#183047;--muted:#63778a;--blue:#17689e}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;font-family:"Malgun Gothic","맑은 고딕",Arial,sans-serif;color:var(--text);background:#e5ebf0}
+#app{height:100%;display:grid;grid-template-rows:54px 1fr 30px}
+header{display:flex;align-items:center;gap:6px;padding:0 9px;background:var(--navy);color:#fff}
+header b{font-size:16px;margin-right:auto;white-space:nowrap}
+button,input,select{font:inherit;font-size:12px}
+button{min-height:30px;padding:5px 9px;border:1px solid #b7c5d1;border-radius:5px;background:#fff;color:var(--text);cursor:pointer}
+button:hover{background:#f0f6fa}
+button.active{background:#d8ecfb;border-color:#5b9bc7;color:#063a61;font-weight:700}
+header button{background:#123b62;border-color:#315b7e;color:#fff}
+header button.active{background:#fff;color:var(--navy)}
+header .unit{margin-left:5px;padding:6px 9px;background:#fff;color:var(--navy);border-radius:4px;font-weight:700;font-size:12px;white-space:nowrap}
+main{min-height:0;display:grid;grid-template-columns:330px 1fr}
+aside{overflow:auto;background:#fff;border-right:1px solid var(--line);padding:8px}
+.sec{border:1px solid var(--line);border-radius:6px;margin-bottom:8px;overflow:hidden;background:#fff}
+.sec h3{margin:0;padding:8px;background:#f5f8fa;color:var(--navy);font-size:13px}
+.pad{padding:8px}.g2,.g3{display:grid;gap:6px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
+label{display:block;font-size:11px;color:var(--muted)}
+input,select{width:100%;height:29px;margin-top:3px;border:1px solid #b8c5d0;border-radius:4px;padding:3px 6px;background:#fff;color:var(--text)}
+.row{display:flex;gap:6px;margin-top:7px}.row button{flex:1}.hint{font-size:10.5px;line-height:1.5;color:var(--muted);margin-top:6px}
+.spec{display:grid;grid-template-columns:78px 1fr;gap:3px 8px;font-size:11px}.spec b{color:var(--blue)}
+#vp{position:relative;min-width:0;min-height:0;background:#dfe5eb}
+#vp canvas{display:block;width:100%;height:100%;outline:none}
+#info{position:absolute;left:10px;top:10px;z-index:3;display:none;width:270px;padding:9px;background:#fffffff2;border:1px solid #9fb0be;border-radius:6px;font-size:11px;line-height:1.55;pointer-events:none}
+#info strong{display:block;padding-bottom:5px;margin-bottom:5px;border-bottom:1px solid #d5dee5;color:var(--navy);font-size:12px}
+#help{position:absolute;right:10px;top:10px;z-index:2;padding:7px 9px;background:#fffffff0;border:1px solid #c1ccd5;border-radius:5px;font-size:10.5px;line-height:1.55;pointer-events:none}
+#axis{position:absolute;left:10px;bottom:10px;z-index:2;padding:6px 8px;background:#fffffff0;border:1px solid #c1ccd5;border-radius:5px;font-size:10.5px;pointer-events:none}
+.x{color:#d12d27;font-weight:700}.y{color:#168647;font-weight:700}.z{color:#245dcc;font-weight:700}
+footer{display:flex;gap:18px;align-items:center;padding:0 9px;background:#f8fafb;border-top:1px solid var(--line);font-size:10.5px}
+.warn{color:#a4432f}.locked{opacity:.6}
+</style>
+
+<script type="importmap">
+{"imports":{
+"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+"three/addons/":"https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<div id="app">
+<header>
+  <b>CareMate CAD</b>
+  <button data-view="iso">ISO</button>
+  <button data-view="top">TOP</button>
+  <button data-view="front">FRONT</button>
+  <button data-view="right">RIGHT</button>
+  <button id="moveMode" class="active">이동</button>
+  <button id="rotateMode">회전</button>
+  <button id="measureBtn">2점 측정</button>
+  <span class="unit">1 좌표 단위 = 1 mm</span>
+</header>
+
+<main>
+<aside>
+  <div class="sec">
+    <h3>공간</h3><div class="pad">
+      <div class="g3">
+        <label>X 폭<input id="spaceX" type="number" value="2500"></label>
+        <label>Y 길이<input id="spaceY" type="number" value="2500"></label>
+        <label>Z 높이<input id="spaceZ" type="number" value="2500"></label>
+      </div>
+      <div class="row"><button id="applySpace">공간 적용</button></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>기본 구조</h3><div class="pad">
+      <label>구조 이름<input id="frameName" value="침대 프레임"></label>
+      <div class="g3">
+        <label>폭 X<input id="frameW" type="number" value="900"></label>
+        <label>길이 Y<input id="frameL" type="number" value="2000"></label>
+        <label>높이 Z<input id="frameH" type="number" value="250"></label>
+      </div>
+      <div class="g3">
+        <label>각관 폭<input id="railW" type="number" value="20"></label>
+        <label>각관 높이<input id="railH" type="number" value="40"></label>
+        <label>가로바 수<input id="crossCount" type="number" value="8"></label>
+      </div>
+      <div class="row"><button id="buildFrame">구조 다시 배치</button></div>
+      <div class="hint">현재 프레임 기준: 외부 900×2000mm, 내부 폭 860mm, 높이 250mm. 가로바 상세 위치는 임시입니다.</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>직육면체 추가</h3><div class="pad">
+      <label>이름<input id="boxName" value="부품"></label>
+      <div class="g3">
+        <label>X 크기<input id="boxSX" type="number" value="500"></label>
+        <label>Y 크기<input id="boxSY" type="number" value="300"></label>
+        <label>Z 크기<input id="boxSZ" type="number" value="100"></label>
+      </div>
+      <div class="g3">
+        <label>중심 X<input id="boxX" type="number" value="1250"></label>
+        <label>중심 Y<input id="boxY" type="number" value="1250"></label>
+        <label>중심 Z<input id="boxZ" type="number" value="100"></label>
+      </div>
+      <div class="row"><button id="addBox">추가</button></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>BP-Hub-8 추가</h3><div class="pad">
+      <label>이름<input id="hubName" value="BP-Hub-8"></label>
+      <div class="g3">
+        <label>외경 Ø<input id="hubOD" type="number" step=".1" value="25.5"></label>
+        <label>두께 T<input id="hubT" type="number" step=".1" value="10"></label>
+        <label>축홀 Ø<input id="hubBore" type="number" step=".1" value="8"></label>
+      </div>
+      <div class="g2">
+        <label>전면 PCD<input id="hubPCD" type="number" step=".1" value="20"></label>
+        <label>축 방향<select id="hubAxis"><option>X</option><option>Y</option><option>Z</option></select></label>
+      </div>
+      <div class="g3">
+        <label>중심 X<input id="hubX" type="number" value="1250"></label>
+        <label>중심 Y<input id="hubY" type="number" value="1250"></label>
+        <label>중심 Z<input id="hubZ" type="number" value="300"></label>
+      </div>
+      <div class="row"><button id="addHub">허브 추가</button><button id="copyHub" disabled>선택 허브 복제</button></div>
+      <div class="hint">
+        실물/기존 자료 기준 표현: Ø25.5 × 10T, Ø8 축홀, PCD20, 전면 4-M3 + 4-Ø3, 측면 4-M4 위치.
+        M3 나사산과 측면 M4 나사산은 브라우저 CAD에서 시각적 형상으로 표현합니다.
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>STL 불러오기</h3><div class="pad">
+      <input id="stlInput" type="file" accept=".stl">
+      <div class="hint">STL 원래 치수를 mm로 취급하여 작업공간 중앙에 배치합니다.</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>선택 객체 이동 / 정보</h3><div class="pad">
+      <label>객체 이름<input id="selectedName" disabled></label>
+      <div class="g3">
+        <label>중심 X<input id="posX" type="number" step=".1" disabled></label>
+        <label>중심 Y<input id="posY" type="number" step=".1" disabled></label>
+        <label>중심 Z<input id="posZ" type="number" step=".1" disabled></label>
+      </div>
+      <div class="row"><button id="applyPos" disabled>좌표 적용</button><button id="rename" disabled>이름 변경</button></div>
+      <div class="g2" style="margin-top:7px">
+        <label>이동 스냅(mm)<input id="moveSnap" type="number" min="0" step=".1" value="1"></label>
+        <label>회전 스냅(°)<input id="rotSnap" type="number" min="0" step="1" value="5"></label>
+      </div>
+      <div class="row"><button id="deleteObj" disabled>선택 삭제</button><button id="detach">선택 해제</button></div>
+      <div class="spec" style="margin-top:8px">
+        <span>종류</span><b id="selKind">-</b>
+        <span>크기 X</span><b id="selSX">-</b>
+        <span>크기 Y</span><b id="selSY">-</b>
+        <span>크기 Z</span><b id="selSZ">-</b>
+        <span>회전 X/Y/Z</span><b id="selRot">-</b>
+      </div>
+      <div id="selNote" class="hint">객체를 클릭하면 XYZ 이동 화살표가 나타납니다. 화살표를 끌거나 중심 좌표를 직접 입력하세요.</div>
+    </div>
+  </div>
+</aside>
+
+<div id="vp">
+  <div id="info"><strong id="infoTitle">선택 객체</strong><div id="infoBody"></div></div>
+  <div id="help">객체 클릭 → 선택<br><b>이동</b>: 빨강 X / 초록 Y / 파랑 Z 화살표 드래그<br><b>회전</b>: 회전 링 드래그<br>W=이동 · E=회전 · Esc=선택해제</div>
+  <div id="axis"><span class="x">X</span>=가로(폭) · <span class="y">Y</span>=세로(길이) · <span class="z">Z</span>=높이</div>
+</div>
+</main>
+<footer><span id="status">모드: 이동</span><span id="pointerStatus">포인터: -</span></footer>
+</div>
+
 <script type="module">
-import * as THREE from"three";import{OrbitControls}from"three/addons/controls/OrbitControls.js";import{STLLoader}from"three/addons/loaders/STLLoader.js";
-const $=id=>document.getElementById(id),vp=$("vp"),scene=new THREE.Scene();scene.background=new THREE.Color(0xe3e8ed);
-const cam=new THREE.PerspectiveCamera(42,1,1,30000),ren=new THREE.WebGLRenderer({antialias:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));vp.prepend(ren.domElement);
-const ctl=new OrbitControls(cam,ren.domElement);ctl.enableDamping=true;ctl.screenSpacePanning=true;scene.add(new THREE.HemisphereLight(0xffffff,0x778899,2));const dl=new THREE.DirectionalLight(0xffffff,1);dl.position.set(3000,4000,2500);scene.add(dl);
-let SX=2500,SY=2500,SZ=2500,grid,bounds,frame,sel,boxH,objs=[],measure=false,mp=[];const ray=new THREE.Raycaster(),pt=new THREE.Vector2(),mg=new THREE.Group();scene.add(mg);
-const u2w=(x,y,z)=>new THREE.Vector3(x,z,y),w2u=v=>({x:v.x,y:v.z,z:v.y});
-function dispose(o){o.traverse?.(x=>{x.geometry?.dispose();if(x.material){(Array.isArray(x.material)?x.material:[x.material]).forEach(m=>m.dispose())}});o.parent?.remove(o)}
-function mkGrid(){grid&&dispose(grid);grid=new THREE.Group();const pts=[];for(let x=0;x<=SX;x+=100)pts.push(new THREE.Vector3(x,0,0),new THREE.Vector3(x,0,SY));for(let y=0;y<=SY;y+=100)pts.push(new THREE.Vector3(0,0,y),new THREE.Vector3(SX,0,y));grid.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xaab7c3})));scene.add(grid)}
-function mkBounds(){bounds&&dispose(bounds);bounds=new THREE.Group();const v=[[0,0,0],[SX,0,0],[SX,0,SY],[0,0,SY],[0,SZ,0],[SX,SZ,0],[SX,SZ,SY],[0,SZ,SY]].map(a=>new THREE.Vector3(...a)),e=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]],p=[];e.forEach(a=>p.push(v[a[0]],v[a[1]]));bounds.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(p),new THREE.LineBasicMaterial({color:0x32495d})));scene.add(bounds)}
-function view(v="iso"){const c=new THREE.Vector3(SX/2,SZ/2,SY/2),d=Math.max(SX,SY,SZ)*1.7;ctl.target.copy(c);cam.position.set(v==="right"?SX+d:c.x,v==="top"?SZ+d:v==="iso"?SZ+d*.6:c.y,v==="front"?-d:v==="iso"?SY+d*.7:c.z);if(v==="right")cam.position.z=c.z;if(v==="top"){cam.position.x=c.x;cam.position.z=c.z+.01}cam.lookAt(c);ctl.update()}
-function rebuild(){SX=+$("sx").value||2500;SY=+$("sy").value||2500;SZ=+$("sz").value||2500;mkGrid();mkBounds();view()}
-function part(g,w,d,h,x,y,z,name,kind="frame"){g.position.copy(u2w(x,y,z));g.userData={name,kind,sx:w,sy:d,sz:h,px:x,py:y,pz:z};const ge=new THREE.BoxGeometry(w,h,d),m=new THREE.MeshStandardMaterial({color:kind==="frame"?0x303840:0x8798a6,roughness:.7,metalness:kind==="frame"?.3:.05});const me=new THREE.Mesh(ge,m);me.position.set(w/2,h/2,d/2);me.userData.owner=g;g.add(me);g.add(new THREE.LineSegments(new THREE.EdgesGeometry(ge),new THREE.LineBasicMaterial({color:0x152536})));g.children[1].position.copy(me.position);scene.add(g);objs.push(g);return g}
-function buildFrame(){if(frame){objs=objs.filter(o=>o.userData.kind!=="frame");dispose(frame)}frame=new THREE.Group();scene.add(frame);const W=+$("fw").value||900,L=+$("fl").value||2000,H=+$("fh").value||250,rw=+$("rw").value||20,rh=+$("rh").value||40,x=(SX-W)/2,y=(SY-L)/2,z=H-rh,n=+$("cc").value||8;[["좌측 외곽레일",rw,L,rh,x,y],["우측 외곽레일",rw,L,rh,x+W-rw,y],["앞쪽 가로 프레임",W-2*rw,rw,rh,x+rw,y],["뒤쪽 가로 프레임",W-2*rw,rw,rh,x+rw,y+L-rw]].forEach(a=>{const g=new THREE.Group();frame.add(g);part(g,a[1],a[2],a[3],a[4],a[5],z,a[0],"frame")});for(let i=1;i<=n;i++){const yy=y+L*i/(n+1);const g=new THREE.Group();frame.add(g);part(g,W-2*rw,18,18,x+rw,yy,z+rh-18,`가로 지지대 ${i}`,"frame")}const legH=z;[[x,y+40],[x+W-40,y+40],[x,y+L-80],[x+W-40,y+L-80]].forEach((q,i)=>{const g=new THREE.Group();frame.add(g);part(g,40,40,legH,q[0],q[1],0,`다리 ${i+1}`,"frame")})}
-function ring(od,bore,t){const s=new THREE.Shape();s.absarc(0,0,od/2,0,Math.PI*2,false);const h=new THREE.Path();h.absarc(0,0,bore/2,0,Math.PI*2,true);s.holes.push(h);const g=new THREE.ExtrudeGeometry(s,{depth:t,bevelEnabled:false,curveSegments:64});g.translate(0,0,-t/2);return g}
-function addHub(o={}){const name=o.name||$("hn").value||"BP-Hub-8",od=+(o.od??$("hod").value)||25.5,t=+(o.t??$("ht").value)||10,bore=+(o.bore??$("hb").value)||8,pcd=+(o.pcd??$("hpcd").value)||20,ax=o.ax||$("ha").value,x=+(o.x??$("hx").value)||0,y=+(o.y??$("hy").value)||0,z=+(o.z??$("hz").value)||0,g=new THREE.Group();g.userData={name,kind:"hub",od,t,bore,pcd,ax,px:x,py:y,pz:z};const body=new THREE.Mesh(ring(od,bore,t),new THREE.MeshStandardMaterial({color:0x7b858e,metalness:.75,roughness:.35}));body.userData.owner=g;g.add(body);for(let i=0;i<8;i++){const a=i*Math.PI/4,r=pcd/2,ge=new THREE.CylinderGeometry(1.5,1.5,.3,18);ge.rotateX(Math.PI/2);for(const sd of[-1,1]){const m=new THREE.Mesh(ge,new THREE.MeshBasicMaterial({color:i%2?0x556b7a:0x182a38}));m.position.set(Math.cos(a)*r,Math.sin(a)*r,sd*(t/2+.15));m.userData.owner=g;g.add(m)}}if(ax==="X")g.rotation.y=Math.PI/2;else if(ax==="Z")g.rotation.x=-Math.PI/2;g.position.copy(u2w(x,y,z));g.userData.sx=ax==="X"?t:od;g.userData.sy=ax==="Y"?t:od;g.userData.sz=ax==="Z"?t:od;scene.add(g);objs.push(g);select(g)}
-function pick(e){const r=ren.domElement.getBoundingClientRect();pt.x=(e.clientX-r.left)/r.width*2-1;pt.y=-(e.clientY-r.top)/r.height*2+1;ray.setFromCamera(pt,cam);const h=ray.intersectObjects(objs,true)[0];if(!h)return null;let o=h.object;while(o&&!o.userData?.kind&&!o.userData?.owner)o=o.parent;return o?.userData?.owner||o}
-function select(o){sel=o;boxH&&scene.remove(boxH);if(!o){$("info").style.display="none";$("sn").disabled=$("rename").disabled=$("del").disabled=true;return}boxH=new THREE.BoxHelper(o,0x1e6fa8);scene.add(boxH);const d=o.userData,kind=d.kind==="hub"?"원형 허브":d.kind==="frame"?"기본 구조 부품":d.kind==="stl"?"STL":"직육면체";$("sn").disabled=$("rename").disabled=$("del").disabled=false;$("sn").value=d.name;$("sk").textContent=kind;["ssx","ssy","ssz"].forEach((id,i)=>$(id).textContent=[d.sx,d.sy,d.sz][i].toFixed(1)+" mm");["spx","spy","spz"].forEach((id,i)=>$(id).textContent=[d.px,d.py,d.pz][i].toFixed(1)+" mm");$("it").textContent=d.name;$("ib").innerHTML=`${kind}<br>크기 X ${d.sx.toFixed(1)} / Y ${d.sy.toFixed(1)} / Z ${d.sz.toFixed(1)} mm<br>위치 X ${d.px.toFixed(1)} / Y ${d.py.toFixed(1)} / Z ${d.pz.toFixed(1)} mm`;$("info").style.display="block";$("hubCopy").disabled=d.kind!=="hub";$("note").textContent=d.kind==="hub"?`Ø${d.od} × ${d.t}T / 축홀 Ø${d.bore} / PCD${d.pcd} / 축 ${d.ax}`:"X=폭, Y=길이, Z=높이"}
-function mpick(e){const r=ren.domElement.getBoundingClientRect();pt.x=(e.clientX-r.left)/r.width*2-1;pt.y=-(e.clientY-r.top)/r.height*2+1;ray.setFromCamera(pt,cam);const pl=new THREE.Plane(new THREE.Vector3(0,1,0),0),p=new THREE.Vector3();return ray.ray.intersectPlane(pl,p)?p:null}
-ren.domElement.addEventListener("click",e=>{if(measure){const p=mpick(e);if(!p)return;mp.push(p);const m=new THREE.Mesh(new THREE.SphereGeometry(12),new THREE.MeshBasicMaterial({color:0xc23a35}));m.position.copy(p);mg.add(m);if(mp.length===2){mg.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(mp),new THREE.LineBasicMaterial({color:0xc23a35})));$("status").textContent=`측정: ${mp[0].distanceTo(mp[1]).toFixed(1)} mm`;mp=[]}return}select(pick(e))});
-$("spaceBtn").onclick=rebuild;$("frameBtn").onclick=buildFrame;$("boxBtn").onclick=()=>part(new THREE.Group(),+$("bw").value,+$("bd").value,+$("bh").value,+$("bx").value,+$("by").value,+$("bz").value,$("bn").value||"부품","box");$("hubBtn").onclick=()=>addHub();$("hubCopy").onclick=()=>{if(sel?.userData.kind!=="hub")return;const d=sel.userData;addHub({name:d.name+" 복제",od:d.od,t:d.t,bore:d.bore,pcd:d.pcd,ax:d.ax,x:d.px+(d.ax==="X"?40:0),y:d.py+(d.ax==="Y"?40:0),z:d.pz+(d.ax==="Z"?40:0)})};
-$("rename").onclick=()=>{if(sel){sel.userData.name=$("sn").value||sel.userData.name;select(sel)}};$("del").onclick=()=>{if(!sel||sel.userData.kind==="frame")return;objs=objs.filter(x=>x!==sel);const d=sel;select(null);dispose(d)};
-$("measure").onclick=()=>{measure=!measure;$("status").textContent=measure?"모드: 2점 측정":"모드: 보기";ctl.enabled=!measure;if(!measure){while(mg.children.length)dispose(mg.children[0]);mp=[]}};
-document.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>view(b.dataset.v));
-$("stl").onchange=async e=>{const f=e.target.files[0];if(!f)return;const ge=new STLLoader().parse(await f.arrayBuffer());ge.computeBoundingBox();const s=new THREE.Vector3();ge.boundingBox.getSize(s);ge.translate(-ge.boundingBox.min.x,-ge.boundingBox.min.y,-ge.boundingBox.min.z);const g=new THREE.Group(),m=new THREE.Mesh(ge,new THREE.MeshStandardMaterial({color:0x66798a}));g.add(m);g.position.copy(u2w((SX-s.x)/2,(SY-s.z)/2,0));g.userData={name:f.name,kind:"stl",sx:s.x,sy:s.z,sz:s.y,px:(SX-s.x)/2,py:(SY-s.z)/2,pz:0};scene.add(g);objs.push(g);select(g)};
-function resize(){ren.setSize(vp.clientWidth,vp.clientHeight,false);cam.aspect=vp.clientWidth/vp.clientHeight;cam.updateProjectionMatrix()}addEventListener("resize",resize);rebuild();buildFrame();resize();view();(function loop(){requestAnimationFrame(loop);ctl.update();boxH?.update();ren.render(scene,cam)})();
-</script></body></html>
+import * as THREE from "three";
+import {OrbitControls} from "three/addons/controls/OrbitControls.js";
+import {TransformControls} from "three/addons/controls/TransformControls.js";
+import {STLLoader} from "three/addons/loaders/STLLoader.js";
+
+const $=id=>document.getElementById(id);
+const vp=$("vp");
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xe2e8ed);
+
+const camera=new THREE.PerspectiveCamera(42,1,1,30000);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+vp.prepend(renderer.domElement);
+
+const orbit=new OrbitControls(camera,renderer.domElement);
+orbit.enableDamping=true;
+orbit.dampingFactor=.08;
+orbit.screenSpacePanning=true;
+
+const transform=new TransformControls(camera,renderer.domElement);
+scene.add(transform.getHelper());
+transform.setMode("translate");
+transform.setSpace("world");
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x788694,2.1));
+const sun=new THREE.DirectionalLight(0xffffff,1.1);
+sun.position.set(3200,4500,2800); scene.add(sun);
+
+let SX=2500,SY=2500,SZ=2500;
+let gridGroup=null,boundsGroup=null,frameRoot=null,selected=null,selectionBox=null;
+let objects=[];
+let measuring=false,measurePts=[],measureGroup=new THREE.Group();
+let transforming=false,blockSelectUntil=0,pointerDown=null;
+scene.add(measureGroup);
+
+const raycaster=new THREE.Raycaster();
+const pointer=new THREE.Vector2();
+
+const userToWorld=(x,y,z)=>new THREE.Vector3(x,z,y);
+const worldToUser=v=>({x:v.x,y:v.z,z:v.y});
+const deg=r=>THREE.MathUtils.radToDeg(r);
+const rad=d=>THREE.MathUtils.degToRad(d);
+
+function dispose(o){
+  o?.traverse?.(x=>{
+    x.geometry?.dispose?.();
+    if(x.material){
+      (Array.isArray(x.material)?x.material:[x.material]).forEach(m=>m.dispose?.());
+    }
+  });
+  o?.parent?.remove(o);
+}
+
+function removeFromObjects(o){ objects=objects.filter(x=>x!==o); }
+
+function buildGrid(){
+  if(gridGroup)dispose(gridGroup);
+  gridGroup=new THREE.Group();
+  const minor=[],major=[];
+  const step=100;
+  for(let x=0;x<=SX+.01;x+=step){
+    (x%500===0?major:minor).push(new THREE.Vector3(x,0,0),new THREE.Vector3(x,0,SY));
+  }
+  for(let y=0;y<=SY+.01;y+=step){
+    (y%500===0?major:minor).push(new THREE.Vector3(0,0,y),new THREE.Vector3(SX,0,y));
+  }
+  if(minor.length)gridGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(minor),new THREE.LineBasicMaterial({color:0xb8c2cb,transparent:true,opacity:.65})));
+  if(major.length)gridGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(major),new THREE.LineBasicMaterial({color:0x7f8e9b,transparent:true,opacity:.8})));
+  scene.add(gridGroup);
+}
+
+function buildBounds(){
+  if(boundsGroup)dispose(boundsGroup);
+  boundsGroup=new THREE.Group();
+  const v=[[0,0,0],[SX,0,0],[SX,0,SY],[0,0,SY],[0,SZ,0],[SX,SZ,0],[SX,SZ,SY],[0,SZ,SY]].map(a=>new THREE.Vector3(...a));
+  const e=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]],pts=[];
+  e.forEach(([a,b])=>pts.push(v[a],v[b]));
+  boundsGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x30485d})));
+  scene.add(boundsGroup);
+}
+
+function rebuildSpace(resetView=true){
+  SX=+$("spaceX").value||2500; SY=+$("spaceY").value||2500; SZ=+$("spaceZ").value||2500;
+  buildGrid(); buildBounds();
+  if(resetView)setView("iso");
+}
+
+function setView(v="iso"){
+  const c=new THREE.Vector3(SX/2,SZ*.45,SY/2),d=Math.max(SX,SY,SZ)*1.65;
+  orbit.target.copy(c);
+  if(v==="top")camera.position.set(c.x,SZ+d,c.z+.01);
+  else if(v==="front")camera.position.set(c.x,c.y,-d);
+  else if(v==="right")camera.position.set(SX+d,c.y,c.z);
+  else camera.position.set(SX+d*.66,SZ+d*.52,SY+d*.72);
+  camera.lookAt(c); orbit.update();
+}
+
+function registerObject(g,name,kind,sx,sy,sz,x,y,z,locked=false){
+  g.userData={...g.userData,name,kind,sx,sy,sz,px:x,py:y,pz:z,locked};
+  g.position.copy(userToWorld(x,y,z));
+  g.traverse(c=>{ if(c!==g)c.userData.owner=g; });
+  objects.push(g);
+  return g;
+}
+
+function makeBox(parent,name,sx,sy,sz,x,y,z,kind="box",color=0x8798a6,locked=false){
+  const g=new THREE.Group();
+  const geo=new THREE.BoxGeometry(sx,sz,sy);
+  const mat=new THREE.MeshStandardMaterial({color,roughness:.72,metalness:kind==="frame"?.28:.06});
+  const mesh=new THREE.Mesh(geo,mat); mesh.userData.owner=g; g.add(mesh);
+  const edges=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x152536,transparent:true,opacity:.82}));
+  edges.userData.owner=g; g.add(edges);
+  (parent||scene).add(g);
+  return registerObject(g,name,kind,sx,sy,sz,x,y,z,locked);
+}
+
+function buildFrame(){
+  if(selected?.userData.kind==="frame")clearSelection();
+  if(frameRoot){
+    objects.filter(o=>o.userData.kind==="frame").forEach(removeFromObjects);
+    dispose(frameRoot);
+  }
+  frameRoot=new THREE.Group(); scene.add(frameRoot);
+  const W=+$("frameW").value||900,L=+$("frameL").value||2000,H=+$("frameH").value||250;
+  const rw=+$("railW").value||20,rh=+$("railH").value||40,n=Math.max(0,Math.round(+$("crossCount").value||0));
+  const cx=SX/2,cy=SY/2,z=H-rh/2;
+  const xL=cx-W/2+rw/2,xR=cx+W/2-rw/2;
+  makeBox(frameRoot,"좌측 외곽레일",rw,L,rh,xL,cy,z,"frame",0x30373d,true);
+  makeBox(frameRoot,"우측 외곽레일",rw,L,rh,xR,cy,z,"frame",0x30373d,true);
+  makeBox(frameRoot,"앞쪽 가로 프레임",W-2*rw,rw,rh,cx,cy-L/2+rw/2,z,"frame",0x30373d,true);
+  makeBox(frameRoot,"뒤쪽 가로 프레임",W-2*rw,rw,rh,cx,cy+L/2-rw/2,z,"frame",0x30373d,true);
+  for(let i=1;i<=n;i++){
+    const yy=cy-L/2+L*i/(n+1);
+    makeBox(frameRoot,`가로 지지대 ${i}`,W-2*rw,18,18,cx,yy,H-9,"frame",0x66737e,true);
+  }
+  const legH=H-rh;
+  const lx=[cx-W/2+20,cx+W/2-20],ly=[cy-L/2+55,cy+L/2-55];
+  let idx=1;
+  for(const x of lx)for(const y of ly)makeBox(frameRoot,`다리 ${idx++}`,40,40,legH,x,y,legH/2,"frame",0x343b41,true);
+}
+
+function ringShapeGeometry(od,bore,t,pcd){
+  const s=new THREE.Shape();
+  s.absarc(0,0,od/2,0,Math.PI*2,false);
+  const center=new THREE.Path(); center.absarc(0,0,bore/2,0,Math.PI*2,true); s.holes.push(center);
+  for(let i=0;i<8;i++){
+    const a=i*Math.PI/4;
+    const holeD=i%2===0?2.5:3.0;
+    const h=new THREE.Path();
+    h.absarc(Math.cos(a)*pcd/2,Math.sin(a)*pcd/2,holeD/2,0,Math.PI*2,true);
+    s.holes.push(h);
+  }
+  const g=new THREE.ExtrudeGeometry(s,{depth:t,bevelEnabled:false,curveSegments:96});
+  g.translate(0,0,-t/2);
+  g.computeVertexNormals();
+  return g;
+}
+
+function addSideM4Markers(g,od,t){
+  const dark=new THREE.MeshStandardMaterial({color:0x20262b,metalness:.45,roughness:.45});
+  for(let i=0;i<4;i++){
+    const a=i*Math.PI/2;
+    const geo=new THREE.CylinderGeometry(2,2,1.4,28);
+    const m=new THREE.Mesh(geo,dark);
+    m.rotation.z=a-Math.PI/2;
+    const r=od/2-.35;
+    m.position.set(Math.cos(a)*r,Math.sin(a)*r,0);
+    m.userData.owner=g;
+    g.add(m);
+  }
+}
+
+function createHub(opts={}){
+  const name=opts.name ?? ($("hubName").value || "BP-Hub-8");
+  const od=+(opts.od??$("hubOD").value)||25.5;
+  const t=+(opts.t??$("hubT").value)||10;
+  const bore=+(opts.bore??$("hubBore").value)||8;
+  const pcd=+(opts.pcd??$("hubPCD").value)||20;
+  const axis=opts.axis??$("hubAxis").value;
+  const x=+(opts.x??$("hubX").value)||0, y=+(opts.y??$("hubY").value)||0, z=+(opts.z??$("hubZ").value)||0;
+
+  const g=new THREE.Group();
+  const mat=new THREE.MeshStandardMaterial({color:0xa7adb2,metalness:.86,roughness:.28});
+  const body=new THREE.Mesh(ringShapeGeometry(od,bore,t,pcd),mat); body.userData.owner=g; g.add(body);
+  const edge=new THREE.LineSegments(new THREE.EdgesGeometry(body.geometry,18),new THREE.LineBasicMaterial({color:0x404a52,transparent:true,opacity:.7}));
+  edge.userData.owner=g; g.add(edge);
+  addSideM4Markers(g,od,t);
+
+  if(axis==="X")g.rotation.y=Math.PI/2;
+  else if(axis==="Z")g.rotation.x=-Math.PI/2;
+
+  const sx=axis==="X"?t:od, sy=axis==="Y"?t:od, sz=axis==="Z"?t:od;
+  g.userData={hub:{od,t,bore,pcd,axis,front:"4-M3 + 4-Ø3",side:"4-M4"}};
+  scene.add(g);
+  registerObject(g,name,"hub",sx,sy,sz,x,y,z,false);
+  selectObject(g);
+}
+
+function updateDataFromTransform(o){
+  if(!o)return;
+  const u=worldToUser(o.position);
+  o.userData.px=u.x;o.userData.py=u.y;o.userData.pz=u.z;
+}
+
+function getDisplaySize(o){
+  if(!o)return {x:0,y:0,z:0};
+  const box=new THREE.Box3().setFromObject(o);
+  const s=new THREE.Vector3(); box.getSize(s);
+  return {x:s.x,y:s.z,z:s.y};
+}
+
+function refreshSelectedUI(){
+  if(!selected)return;
+  updateDataFromTransform(selected);
+  const d=selected.userData, s=getDisplaySize(selected);
+  $("selectedName").value=d.name||"객체";
+  $("posX").value=d.px.toFixed(1); $("posY").value=d.py.toFixed(1); $("posZ").value=d.pz.toFixed(1);
+  const kind=d.kind==="hub"?"BP-Hub-8 허브":d.kind==="frame"?"프레임 부품":d.kind==="stl"?"STL 모델":"직육면체 부품";
+  $("selKind").textContent=kind;
+  $("selSX").textContent=s.x.toFixed(1)+" mm";$("selSY").textContent=s.y.toFixed(1)+" mm";$("selSZ").textContent=s.z.toFixed(1)+" mm";
+  $("selRot").textContent=`${deg(selected.rotation.x).toFixed(1)}° / ${deg(selected.rotation.z).toFixed(1)}° / ${deg(selected.rotation.y).toFixed(1)}°`;
+  $("infoTitle").textContent=d.name;
+  let extra="";
+  if(d.kind==="hub"&&d.hub){
+    const h=d.hub;
+    extra=`<br><b>허브:</b> Ø${h.od} × ${h.t}T · 축홀 Ø${h.bore} · PCD${h.pcd}<br>전면 ${h.front} · 측면 ${h.side} 위치`;
+    $("selNote").textContent="실물 기준 외형/홀 위치를 최대한 반영한 시각 모델입니다. M3/M4 실제 나사산 깊이는 실물 측정 후 확정해야 합니다.";
+  }else $("selNote").textContent=d.locked?"기본 프레임 부품입니다. 이동은 가능하지만 '구조 다시 배치'를 누르면 초기 위치로 돌아갑니다.":"XYZ 화살표를 끌거나 중심 좌표를 입력해서 이동할 수 있습니다.";
+  $("infoBody").innerHTML=`${kind}<br>크기 X ${s.x.toFixed(1)} / Y ${s.y.toFixed(1)} / Z ${s.z.toFixed(1)} mm<br>중심 X ${d.px.toFixed(1)} / Y ${d.py.toFixed(1)} / Z ${d.pz.toFixed(1)} mm${extra}`;
+  $("info").style.display="block";
+  $("copyHub").disabled=d.kind!=="hub";
+}
+
+function setInputsEnabled(on){
+  ["selectedName","posX","posY","posZ","applyPos","rename","deleteObj"].forEach(id=>$(id).disabled=!on);
+}
+
+function selectObject(o){
+  selected=o||null;
+  if(selectionBox){scene.remove(selectionBox);selectionBox=null;}
+  if(!selected){
+    transform.detach();setInputsEnabled(false);$("copyHub").disabled=true;$("info").style.display="none";$("selKind").textContent="-";
+    $("selSX").textContent=$("selSY").textContent=$("selSZ").textContent=$("selRot").textContent="-";
+    return;
+  }
+  selectionBox=new THREE.BoxHelper(selected,0x1e6fa8);scene.add(selectionBox);
+  transform.attach(selected);
+  setInputsEnabled(true);
+  refreshSelectedUI();
+}
+
+function clearSelection(){selectObject(null);}
+
+function pointerNDC(e){
+  const r=renderer.domElement.getBoundingClientRect();
+  pointer.x=((e.clientX-r.left)/r.width)*2-1;
+  pointer.y=-((e.clientY-r.top)/r.height)*2+1;
+}
+
+function pickObject(e){
+  pointerNDC(e);raycaster.setFromCamera(pointer,camera);
+  const hits=raycaster.intersectObjects(objects,true);
+  for(const hit of hits){
+    let o=hit.object;
+    if(o.userData?.owner)return o.userData.owner;
+    while(o){
+      if(objects.includes(o))return o;
+      if(o.userData?.owner)return o.userData.owner;
+      o=o.parent;
+    }
+  }
+  return null;
+}
+
+function groundPoint(e){
+  pointerNDC(e);raycaster.setFromCamera(pointer,camera);
+  const plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),p=new THREE.Vector3();
+  return raycaster.ray.intersectPlane(plane,p)?p:null;
+}
+
+function clearMeasure(){
+  while(measureGroup.children.length)dispose(measureGroup.children[0]);
+  measurePts=[];
+}
+
+transform.addEventListener("dragging-changed",e=>{
+  transforming=e.value;
+  orbit.enabled=!e.value;
+  if(!e.value){
+    blockSelectUntil=performance.now()+180;
+    if(selected){updateDataFromTransform(selected);refreshSelectedUI();selectionBox?.update();}
+  }
+});
+transform.addEventListener("objectChange",()=>{
+  if(selected){updateDataFromTransform(selected);refreshSelectedUI();selectionBox?.update();}
+});
+
+renderer.domElement.addEventListener("pointerdown",e=>{if(e.button===0)pointerDown={x:e.clientX,y:e.clientY};});
+renderer.domElement.addEventListener("pointermove",e=>{
+  const p=groundPoint(e);
+  if(p){const u=worldToUser(p);$("pointerStatus").textContent=`포인터: X ${u.x.toFixed(0)}, Y ${u.y.toFixed(0)}, Z 0 mm`;}
+});
+renderer.domElement.addEventListener("pointerup",e=>{
+  if(e.button!==0||!pointerDown)return;
+  const dist=Math.hypot(e.clientX-pointerDown.x,e.clientY-pointerDown.y);pointerDown=null;
+  if(dist>5||transforming||performance.now()<blockSelectUntil)return;
+  if(measuring){
+    const p=groundPoint(e);if(!p)return;measurePts.push(p);
+    const m=new THREE.Mesh(new THREE.SphereGeometry(12,16,10),new THREE.MeshBasicMaterial({color:0xc23a35}));m.position.copy(p);measureGroup.add(m);
+    if(measurePts.length===2){
+      const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(measurePts),new THREE.LineBasicMaterial({color:0xc23a35}));measureGroup.add(line);
+      $("status").textContent=`측정: ${measurePts[0].distanceTo(measurePts[1]).toFixed(1)} mm`;
+      measurePts=[];
+    }
+    return;
+  }
+  selectObject(pickObject(e));
+});
+
+function setMode(mode){
+  transform.setMode(mode);
+  $("moveMode").classList.toggle("active",mode==="translate");
+  $("rotateMode").classList.toggle("active",mode==="rotate");
+  $("status").textContent="모드: "+(mode==="translate"?"이동":"회전");
+}
+
+$("moveMode").onclick=()=>setMode("translate");
+$("rotateMode").onclick=()=>setMode("rotate");
+$("moveSnap").oninput=()=>{const v=+$("moveSnap").value||0;transform.setTranslationSnap(v>0?v:null);};
+$("rotSnap").oninput=()=>{const v=+$("rotSnap").value||0;transform.setRotationSnap(v>0?rad(v):null);};
+$("moveSnap").dispatchEvent(new Event("input"));
+$("rotSnap").dispatchEvent(new Event("input"));
+
+$("applyPos").onclick=()=>{
+  if(!selected)return;
+  const x=+$("posX").value||0,y=+$("posY").value||0,z=+$("posZ").value||0;
+  selected.position.copy(userToWorld(x,y,z));updateDataFromTransform(selected);refreshSelectedUI();selectionBox?.update();
+};
+$("rename").onclick=()=>{if(selected){selected.userData.name=$("selectedName").value.trim()||selected.userData.name;refreshSelectedUI();}};
+$("detach").onclick=clearSelection;
+$("deleteObj").onclick=()=>{
+  if(!selected)return;
+  const doomed=selected;clearSelection();removeFromObjects(doomed);dispose(doomed);
+};
+
+$("applySpace").onclick=()=>rebuildSpace(true);
+$("buildFrame").onclick=buildFrame;
+$("addBox").onclick=()=>{
+  const g=makeBox(scene,$("boxName").value||"부품",+$("boxSX").value||100,+$("boxSY").value||100,+$("boxSZ").value||100,+$("boxX").value||0,+$("boxY").value||0,+$("boxZ").value||0,"box",0x8798a6,false);
+  selectObject(g);
+};
+$("addHub").onclick=()=>createHub();
+$("copyHub").onclick=()=>{
+  if(selected?.userData.kind!=="hub")return;
+  const h=selected.userData.hub,u=selected.userData;
+  createHub({name:u.name+" 복제",od:h.od,t:h.t,bore:h.bore,pcd:h.pcd,axis:h.axis,x:u.px+40,y:u.py,z:u.pz});
+};
+
+$("measureBtn").onclick=()=>{
+  measuring=!measuring;
+  $("measureBtn").classList.toggle("active",measuring);
+  transform.enabled=!measuring;
+  orbit.enabled=!measuring;
+  $("status").textContent=measuring?"모드: 2점 측정":"모드: "+(transform.mode==="rotate"?"회전":"이동");
+  if(!measuring)clearMeasure();
+};
+
+document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>setView(b.dataset.view));
+
+$("stlInput").addEventListener("change",async e=>{
+  const f=e.target.files?.[0];if(!f)return;
+  const geo=new STLLoader().parse(await f.arrayBuffer());
+  geo.computeVertexNormals();geo.computeBoundingBox();
+  const s=new THREE.Vector3();geo.boundingBox.getSize(s);
+  const center=new THREE.Vector3();geo.boundingBox.getCenter(center);geo.translate(-center.x,-center.y,-center.z);
+  const g=new THREE.Group();const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x687b8d,roughness:.7,metalness:.05}));m.userData.owner=g;g.add(m);scene.add(g);
+  registerObject(g,f.name,"stl",s.x,s.z,s.y,SX/2,SY/2,s.y/2,false);selectObject(g);e.target.value="";
+});
+
+window.addEventListener("keydown",e=>{
+  if(["INPUT","SELECT"].includes(document.activeElement?.tagName))return;
+  if(e.key==="w"||e.key==="W")setMode("translate");
+  else if(e.key==="e"||e.key==="E")setMode("rotate");
+  else if(e.key==="Escape")clearSelection();
+});
+
+function resize(){
+  renderer.setSize(vp.clientWidth,vp.clientHeight,false);
+  camera.aspect=vp.clientWidth/vp.clientHeight;camera.updateProjectionMatrix();
+}
+window.addEventListener("resize",resize);
+
+rebuildSpace(false);buildFrame();resize();setView("iso");
+(function animate(){
+  requestAnimationFrame(animate);orbit.update();selectionBox?.update();renderer.render(scene,camera);
+})();
+</script>
+</body>
+</html>
