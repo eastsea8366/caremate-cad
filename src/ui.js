@@ -3,6 +3,7 @@ import {STLLoader} from "three/addons/loaders/STLLoader.js";
 import {CAD} from "./core.js";
 import "./selection.js";
 import "./sidebar.js";
+import "./input-controls.js";
 
 CAD.$("applySpace").onclick=()=>CAD.rebuildSpace(true);
 CAD.$("buildFrame").onclick=CAD.buildFrame;
