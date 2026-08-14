@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CareMate CAD</title>
 <link rel="stylesheet" href="src/style.css">
+<link rel="stylesheet" href="src/catalog.css">
 <script type="importmap">
 {"imports":{
 "three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
@@ -25,6 +26,7 @@
   <button id="measureBtn">2점 측정</button>
   <button id="shortcutBtn">단축키</button>
   <span class="unit">1 좌표 단위 = 1 mm</span>
+  <button id="objectLibraryBtn" class="object-add-btn">＋ 객체 추가</button>
 </header>
 <main>
 <aside>
@@ -94,24 +96,6 @@
     <div class="hint">현재 기준: 외부 900×2000mm, 내부 폭 860mm, 높이 250mm. 가로바 상세 위치는 임시입니다.</div>
   </div></div>
 
-  <div class="sec"><h3>직육면체 추가</h3><div class="pad">
-    <label>이름<input id="boxName" value="부품"></label>
-    <div class="g3"><label>X 크기<input id="boxSX" type="number" value="500"></label><label>Y 크기<input id="boxSY" type="number" value="300"></label><label>Z 크기<input id="boxSZ" type="number" value="100"></label></div>
-    <div class="g3"><label>중심 X<input id="boxX" type="number" value="1250"></label><label>중심 Y<input id="boxY" type="number" value="1250"></label><label>중심 Z<input id="boxZ" type="number" value="100"></label></div>
-    <div class="row"><button id="addBox">추가</button></div>
-  </div></div>
-
-  <div class="sec"><h3>BP-Hub-8 추가</h3><div class="pad">
-    <label>이름<input id="hubName" value="BP-Hub-8"></label>
-    <div class="g3"><label>외경 Ø<input id="hubOD" type="number" step=".1" value="25.5"></label><label>두께 T<input id="hubT" type="number" step=".1" value="10"></label><label>축홀 Ø<input id="hubBore" type="number" step=".1" value="8"></label></div>
-    <div class="g2"><label>전면 PCD<input id="hubPCD" type="number" step=".1" value="20"></label><label>축 방향<select id="hubAxis"><option>X</option><option>Y</option><option>Z</option></select></label></div>
-    <div class="g3"><label>중심 X<input id="hubX" type="number" value="1250"></label><label>중심 Y<input id="hubY" type="number" value="1250"></label><label>중심 Z<input id="hubZ" type="number" value="300"></label></div>
-    <div class="row"><button id="addHub">허브 추가</button><button id="copyHub" disabled>선택 허브 복제</button></div>
-    <div class="hint">기존 치수/사진 기준: Ø25.5 × 10T, Ø8 축홀, PCD20, 전면 4-M3 + 4-Ø3, 측면 4-M4 위치. 실제 나사산 깊이는 실측 후 확정합니다.</div>
-  </div></div>
-
-  <div class="sec"><h3>STL 불러오기</h3><div class="pad"><input id="stlInput" type="file" accept=".stl"><div class="hint">STL 원래 치수를 mm로 취급하여 작업공간 중앙에 배치합니다.</div></div></div>
-
   <div class="sec"><h3>객체 묶기</h3><div class="pad">
     <label>그룹 이름<input id="groupName" value="객체 그룹"></label>
     <div class="spec" style="margin-top:7px"><span>다중 선택</span><b id="multiCount">0개</b></div>
@@ -147,8 +131,53 @@
   <div id="axis"><span class="x">X</span>=가로(폭) · <span class="y">Y</span>=세로(길이) · <span class="z">Z</span>=높이</div>
 </div>
 </main>
+
+<div id="libraryBackdrop"></div>
+<section id="objectLibrary" aria-label="객체 추가 라이브러리">
+  <div class="library-head">
+    <button id="libraryBackBtn" class="hidden" type="button" aria-label="뒤로">←</button>
+    <div class="library-head-text"><b id="libraryTitle">객체 추가</b><span id="librarySubtitle">대분류 폴더에서 객체 종류를 선택하세요</span></div>
+    <button id="libraryCloseBtn" type="button" aria-label="닫기">×</button>
+  </div>
+  <div class="library-body">
+    <div id="libraryHome">
+      <p class="library-intro">먼저 대분류 폴더를 선택하세요. 폴더 안의 객체는 두 열로 정렬되어 표시됩니다.</p>
+      <div id="folderGrid" class="folder-grid"></div>
+    </div>
+
+    <div id="libraryCategory" style="display:none">
+      <div class="library-toolbar"><b id="categoryTitle">대분류</b><span id="categoryCount">0개 객체</span></div>
+      <div id="objectGrid" class="object-grid"></div>
+    </div>
+
+    <div id="libraryEditor" class="library-editor">
+      <div class="library-editor-title"><b id="editorTitleText">객체 추가</b><small>mm 기준</small></div>
+
+      <div id="boxEditor" class="editor-block" style="display:none">
+        <label>이름<input id="boxName" value="부품"></label>
+        <div class="g3"><label>X 크기<input id="boxSX" type="number" value="500"></label><label>Y 크기<input id="boxSY" type="number" value="300"></label><label>Z 크기<input id="boxSZ" type="number" value="100"></label></div>
+        <div class="g3"><label>중심 X<input id="boxX" type="number" value="1250"></label><label>중심 Y<input id="boxY" type="number" value="1250"></label><label>중심 Z<input id="boxZ" type="number" value="50"></label></div>
+        <div class="row"><button id="addBox">이 객체 추가</button></div>
+        <div class="hint">직육면체와 판재는 같은 기본 형상 편집기를 사용합니다.</div>
+      </div>
+
+      <div id="hubEditor" class="editor-block" style="display:none">
+        <label>이름<input id="hubName" value="BP-Hub-8"></label>
+        <div class="g3"><label>외경 Ø<input id="hubOD" type="number" step=".1" value="25.5"></label><label>두께 T<input id="hubT" type="number" step=".1" value="10"></label><label>축홀 Ø<input id="hubBore" type="number" step=".1" value="8"></label></div>
+        <div class="g2"><label>전면 PCD<input id="hubPCD" type="number" step=".1" value="20"></label><label>축 방향<select id="hubAxis"><option>X</option><option>Y</option><option>Z</option></select></label></div>
+        <div class="g3"><label>중심 X<input id="hubX" type="number" value="1250"></label><label>중심 Y<input id="hubY" type="number" value="1250"></label><label>중심 Z<input id="hubZ" type="number" value="300"></label></div>
+        <div class="row"><button id="addHub">허브 추가</button><button id="copyHub" disabled>선택 허브 복제</button></div>
+        <div class="hint">BP-Hub-8 기준: Ø25.5 × 10T, Ø8 축홀, PCD20, 전면 4-M3 + 4-Ø3, 측면 4-M4 위치.</div>
+      </div>
+    </div>
+
+    <input id="stlInput" type="file" accept=".stl" hidden>
+  </div>
+</section>
+
 <footer><span id="status">모드: 이동</span><span id="pointerStatus">포인터: -</span></footer>
 </div>
 <script type="module" src="src/ui.js"></script>
+<script type="module" src="src/catalog.js"></script>
 </body>
 </html>
