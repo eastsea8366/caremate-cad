@@ -1,10 +1,9 @@
 import * as THREE from "three";
 import {CAD} from "./core.js";
 
-// 왼쪽 마우스는 CAD 선택 전용:
-// 클릭 = 단일 선택 / 드래그 = 박스 다중 선택.
-// 드래그 시작점이 객체 위여도 박스 선택으로 전환된다.
-
+// 왼쪽 마우스 전용 선택 모듈
+// 클릭 = 단일 선택 / 드래그 = 박스 다중 선택
+// 객체 위에서 시작해도 5px 이상 움직이면 박스 선택으로 전환된다.
 queueMicrotask(()=>{
   const el=CAD.renderer?.domElement;
   if(!el||!CAD.marquee)return;
@@ -34,34 +33,78 @@ queueMicrotask(()=>{
     CAD.marquee.classList.remove("crossing");
   };
 
+  // 월드 바운딩 박스를 현재 카메라 화면 사각형으로 투영한다.
+  // 긴 부품/화면 가장자리 부품도 잡히도록 꼭짓점의 clip-z 조건은 사용하지 않는다.
   const screenRectForObject=o=>{
+    o.updateWorldMatrix?.(true,true);
     const box=new THREE.Box3().setFromObject(o);
     if(box.isEmpty())return null;
+
+    const center=new THREE.Vector3();box.getCenter(center);
+    const camDir=new THREE.Vector3();CAD.camera.getWorldDirection(camDir);
+    const toCenter=center.clone().sub(CAD.camera.position);
+    if(toCenter.dot(camDir)<=0)return null; // 카메라 뒤 객체 제외
+
     const min=box.min,max=box.max;
     const corners=[
       [min.x,min.y,min.z],[max.x,min.y,min.z],[min.x,max.y,min.z],[max.x,max.y,min.z],
       [min.x,min.y,max.z],[max.x,min.y,max.z],[min.x,max.y,max.z],[max.x,max.y,max.z]
     ];
-    let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity,visible=false;
+    let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity,count=0;
     const w=el.clientWidth,h=el.clientHeight;
+
     for(const c of corners){
       const p=new THREE.Vector3(...c).project(CAD.camera);
       if(!Number.isFinite(p.x)||!Number.isFinite(p.y))continue;
-      const x=(p.x+1)*.5*w,y=(1-p.y)*.5*h;
-      x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);
-      if(p.z>=-1&&p.z<=1)visible=true;
+      const x=(p.x+1)*0.5*w;
+      const y=(1-p.y)*0.5*h;
+      x0=Math.min(x0,x);x1=Math.max(x1,x);
+      y0=Math.min(y0,y);y1=Math.max(y1,y);
+      count++;
     }
-    return visible?{x0,y0,x1,y1}:null;
+    if(!count)return null;
+    return {x0,y0,x1,y1};
   };
 
   const candidates=()=>{
     const out=[],seen=new Set();
     for(const raw of CAD.objects||[]){
       const o=CAD.topSelectable?.(raw)||raw;
-      if(!o||o.userData?.locked||seen.has(o))continue;
+      if(!o||seen.has(o)||o===CAD.selectionPivot)continue;
       seen.add(o);out.push(o);
     }
     return out;
+  };
+
+  // 프레임처럼 locked 객체만 선택된 경우: 선택 피벗 없이 시각적으로만 표시한다.
+  const showLockedSelection=list=>{
+    CAD.releaseSelectionPivot?.();
+    CAD.clearDimensions?.();
+    CAD.clearMultiVisuals?.();
+    if(CAD.selectionBox){CAD.scene.remove(CAD.selectionBox);CAD.selectionBox=null;}
+    CAD.transform?.detach?.();
+    CAD.selected=null;
+    CAD.multiSelected=[...list];
+    CAD.setInputsEnabled?.(false);
+    if(CAD.$("copyHub"))CAD.$("copyHub").disabled=true;
+
+    list.forEach(o=>{
+      const b=new THREE.BoxHelper(o,0x58a5d8);
+      CAD.scene.add(b);CAD.multiBoxes.push(b);
+    });
+
+    if(CAD.$("info"))CAD.$("info").style.display="block";
+    if(CAD.$("infoTitle"))CAD.$("infoTitle").textContent=`기본 구조 선택 ${list.length}개`;
+    if(CAD.$("infoBody"))CAD.$("infoBody").innerHTML=list.map(o=>`• ${o.userData?.name||"프레임"}`).join("<br>");
+    if(CAD.$("selKind"))CAD.$("selKind").textContent="기본 구조 다중 선택";
+    if(CAD.$("selSX"))CAD.$("selSX").textContent="-";
+    if(CAD.$("selSY"))CAD.$("selSY").textContent="-";
+    if(CAD.$("selSZ"))CAD.$("selSZ").textContent="-";
+    if(CAD.$("selRot"))CAD.$("selRot").textContent="잠금";
+    if(CAD.$("selNote"))CAD.$("selNote").textContent="기본 프레임은 구조 보호를 위해 드래그 선택 표시는 되지만 다중 이동·그룹화는 잠겨 있습니다.";
+    CAD.updateQuickMulti?.(list);
+    CAD.setPreviewObjects?.(list);
+    CAD.updateGroupUI?.();
   };
 
   const finishMarquee=(start,end,base,additive)=>{
@@ -70,33 +113,53 @@ queueMicrotask(()=>{
       x0:Math.min(start.x,end.x),x1:Math.max(start.x,end.x),
       y0:Math.min(start.y,end.y),y1:Math.max(start.y,end.y)
     };
-    const hit=candidates().filter(o=>{
-      const r=screenRectForObject(o);if(!r)return false;
+
+    const allHit=candidates().filter(o=>{
+      const r=screenRectForObject(o);
+      if(!r)return false;
       return crossing
         ?(r.x1>=s.x0&&r.x0<=s.x1&&r.y1>=s.y0&&r.y0<=s.y1)
         :(r.x0>=s.x0&&r.x1<=s.x1&&r.y0>=s.y0&&r.y1<=s.y1);
     });
-    const result=additive?[...new Set([...(base||[]),...hit])]:hit;
+
+    const unlocked=allHit.filter(o=>!o.userData?.locked);
+    const locked=allHit.filter(o=>o.userData?.locked);
+
+    // 사용자 추가 객체가 잡혔다면 프레임은 자동 제외하여 이동/그룹이 바로 가능하게 한다.
+    let hit=unlocked.length?unlocked:locked;
+    if(additive){
+      const existing=(base||[]).filter(Boolean);
+      const existingUnlocked=existing.filter(o=>!o.userData?.locked);
+      const mergedUnlocked=[...new Set([...existingUnlocked,...unlocked])];
+      if(mergedUnlocked.length)hit=mergedUnlocked;
+      else hit=[...new Set([...existing,...locked])];
+    }
+
     CAD.releaseSelectionPivot?.();
-    CAD.multiSelected=result;
-    if(result.length>1)CAD.showMultiSelection?.();
-    else if(result.length===1)CAD.selectObject?.(result[0],true);
-    else CAD.clearSelection?.();
-    CAD.$("status").textContent=`드래그 선택: ${result.length}개`;
+    CAD.multiSelected=[...hit];
+
+    if(hit.length>1){
+      if(hit.every(o=>o.userData?.locked))showLockedSelection(hit);
+      else CAD.showMultiSelection?.();
+    }else if(hit.length===1){
+      CAD.selectObject?.(hit[0],true);
+    }else{
+      CAD.clearSelection?.();
+    }
+
+    const suffix=unlocked.length?"":" (기본 구조)";
+    CAD.$("status").textContent=`드래그 선택: ${hit.length}개${suffix}`;
   };
 
-  // 캡처 단계에서 기존 왼쪽 클릭/드래그 이벤트보다 먼저 처리한다.
+  // 캡처 단계에서 기존 bubbling 선택 이벤트보다 먼저 처리한다.
   el.addEventListener("pointerdown",e=>{
     if(e.button!==0||CAD.measuring||CAD.transforming)return;
-    // 이동/회전 기즈모를 잡은 경우 TransformControls에 넘긴다.
-    if(CAD.transform?.axis)return;
+    if(CAD.transform?.axis)return; // 이동/회전 기즈모 조작은 TransformControls에 양보
 
     const start=localPoint(e);
     drag={
       pointerId:e.pointerId,
-      start,
-      last:start,
-      moved:false,
+      start,last:start,moved:false,
       shift:e.shiftKey,
       picked:CAD.pickObject?.(e)||null,
       base:e.shiftKey?[...(CAD.multiSelected||[])]:[]
@@ -111,10 +174,8 @@ queueMicrotask(()=>{
     if(!drag||e.pointerId!==drag.pointerId)return;
     const p=localPoint(e);drag.last=p;
     const d=Math.hypot(p.x-drag.start.x,p.y-drag.start.y);
-    if(d>5){
-      drag.moved=true;
-      setMarquee(drag.start,p);
-    }
+    if(d>5){drag.moved=true;setMarquee(drag.start,p);}
+
     const gp=CAD.groundPoint?.(e);
     if(gp){
       const u=CAD.worldToUser(gp);
