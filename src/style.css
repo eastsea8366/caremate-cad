@@ -12,10 +12,11 @@ header button{background:#123b62;border-color:#315b7e;color:#fff}
 header button.active{background:#fff;color:var(--navy)}
 header .unit{margin-left:5px;padding:6px 9px;background:#fff;color:var(--navy);border-radius:4px;font-weight:700;font-size:12px;white-space:nowrap}
 main{min-height:0;display:grid;grid-template-columns:370px 1fr}
-aside{overflow:auto;background:#fff;border-right:1px solid var(--line);padding:8px;scrollbar-width:thin}
+aside{position:relative;overflow:auto;background:#fff;border-right:1px solid var(--line);padding:8px;scrollbar-width:thin}
 .sec{border:1px solid var(--line);border-radius:7px;margin-bottom:8px;overflow:hidden;background:#fff}
 .sec h3{margin:0;padding:8px;background:#f5f8fa;color:var(--navy);font-size:13px}
-.quick-sec h3{display:flex;align-items:center;justify-content:space-between;gap:8px}.mini-btn{min-height:24px;padding:2px 7px;font-size:10.5px}
+.quick-sec{position:sticky;top:0;z-index:12;border-color:#8fa6b8;background:#fff}
+.quick-sec h3{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#eef4f8}.mini-btn{min-height:24px;padding:2px 7px;font-size:10.5px}
 .pad{padding:8px}.g2,.g3{display:grid;gap:6px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
 label{display:block;font-size:11px;color:var(--muted)}
 input,select{width:100%;height:29px;margin-top:3px;border:1px solid #b8c5d0;border-radius:4px;padding:3px 6px;background:#fff;color:var(--text)}
@@ -35,7 +36,7 @@ footer{display:flex;gap:18px;align-items:center;padding:0 9px;background:#f8fafb
 .warn{color:#a4432f}.locked{opacity:.6}
 
 /* 선택 객체 빠른 보기 */
-#objectPreview{position:relative;width:100%;height:185px;overflow:hidden;border:1px solid #b8c5d0;border-radius:6px;background:#f1f5f8}
+#objectPreview{position:relative;width:100%;height:185px;overflow:hidden;border:1px solid #9eb1c0;border-radius:6px;background:#f1f5f8}
 #objectPreview canvas{display:block;width:100%;height:100%;cursor:grab}#objectPreview canvas:active{cursor:grabbing}
 #previewEmpty{position:absolute;inset:0;z-index:1;display:grid;place-items:center;text-align:center;color:#7a8b99;font-size:11px;line-height:1.55;pointer-events:none}
 .quick-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-top:8px}.quick-head b{font-size:13px;color:var(--navy)}.quick-head span{font-size:10.5px;color:var(--muted);text-align:right}
