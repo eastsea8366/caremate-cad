@@ -1,0 +1,28 @@
+/* 객체 라이브러리 */
+.object-add-btn{margin-left:4px!important;background:#fff!important;color:#052445!important;border-color:#fff!important;font-weight:700!important;white-space:nowrap}
+#libraryBackdrop{position:fixed;left:0;right:0;top:54px;bottom:30px;z-index:40;background:rgba(5,36,69,.18);opacity:0;pointer-events:none;transition:opacity .18s ease}
+#libraryBackdrop.open{opacity:1;pointer-events:auto}
+#objectLibrary{position:fixed;top:54px;right:0;bottom:30px;z-index:41;width:430px;max-width:calc(100vw - 24px);display:flex;flex-direction:column;background:#fff;border-left:1px solid #9fb0be;transform:translateX(102%);transition:transform .2s ease}
+#objectLibrary.open{transform:translateX(0)}
+.library-head{display:grid;grid-template-columns:34px 1fr 34px;align-items:center;gap:7px;min-height:48px;padding:7px 9px;border-bottom:1px solid #c9d4de;background:#f4f7f9}
+.library-head button{min-height:30px;padding:3px;border-radius:5px}.library-head-text{min-width:0}.library-head-text b{display:block;color:#052445;font-size:14px}.library-head-text span{display:block;margin-top:1px;color:#6b7d8c;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#libraryBackBtn.hidden{visibility:hidden}
+.library-body{flex:1;overflow:auto;padding:12px}
+.library-intro{margin:0 0 10px;color:#63778a;font-size:11px;line-height:1.5}
+.folder-grid,.object-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.folder-card,.object-card{width:100%;min-height:128px;padding:10px;border:1px solid #c9d4de;border-radius:8px;background:#fff;text-align:left;cursor:pointer;transition:border-color .12s ease,background .12s ease,transform .12s ease}
+.folder-card:hover,.object-card:hover{border-color:#6f95b1;background:#f6fafc;transform:translateY(-1px)}
+.folder-icon{position:relative;width:64px;height:45px;margin:2px auto 10px;border-radius:5px;background:#d8e5ee;border:1px solid #99afbf}
+.folder-icon:before{content:"";position:absolute;left:7px;top:-8px;width:28px;height:11px;border:1px solid #99afbf;border-bottom:0;border-radius:5px 5px 0 0;background:#d8e5ee}
+.folder-card b,.object-card b{display:block;color:#173047;font-size:12px;text-align:center}.folder-card small,.object-card small{display:block;margin-top:4px;color:#758795;font-size:10px;line-height:1.35;text-align:center}
+.object-thumb{position:relative;height:70px;margin-bottom:7px;display:grid;place-items:center;background:#f5f8fa;border:1px solid #e1e7ec;border-radius:6px;overflow:hidden}
+.shape-box{width:66px;height:38px;background:#9baab6;border:1px solid #4c6070;transform:skewY(-8deg)}
+.shape-plate{width:76px;height:14px;background:#aebbc5;border:1px solid #4c6070;transform:skewY(-7deg)}
+.shape-hub{width:58px;height:58px;border-radius:50%;border:9px solid #9ea7ae;box-shadow:inset 0 0 0 2px #47545e;position:relative}.shape-hub:after{content:"";position:absolute;left:50%;top:50%;width:13px;height:13px;border-radius:50%;background:#f5f8fa;border:2px solid #46535d;transform:translate(-50%,-50%)}
+.shape-file{width:46px;height:57px;border:2px solid #718594;border-radius:4px;background:#fff;position:relative}.shape-file:before{content:"STL";position:absolute;left:0;right:0;bottom:9px;text-align:center;font:bold 11px Consolas;color:#405769}.shape-file:after{content:"";position:absolute;right:-2px;top:-2px;border-left:13px solid transparent;border-bottom:13px solid #dce6ed}
+.library-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.library-toolbar b{font-size:13px;color:#052445}.library-toolbar span{font-size:10.5px;color:#718492}
+.library-editor{display:none}.library-editor.active{display:block}.library-editor-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #dde5eb}.library-editor-title b{font-size:13px;color:#052445}.library-editor-title small{color:#758795;font-size:10px}
+.library-editor .editor-block{padding:10px;border:1px solid #c9d4de;border-radius:7px;background:#fbfcfd}.library-editor .hint{margin-top:7px}
+.library-path{display:flex;align-items:center;gap:5px;margin-bottom:9px;color:#728593;font-size:10.5px}.library-path b{color:#27475f}.library-path span{color:#9aabb6}
+.library-empty{padding:18px;text-align:center;color:#7a8d9a;font-size:11px}
+@media(max-width:760px){#objectLibrary{width:360px}.folder-grid,.object-grid{gap:7px}.folder-card,.object-card{min-height:116px}}
