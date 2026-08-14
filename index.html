@@ -28,17 +28,70 @@
 </header>
 <main>
 <aside>
-  <div class="sec"><h3>공간</h3><div class="pad">
-    <div class="g3"><label>X 폭<input id="spaceX" type="number" value="2500"></label><label>Y 길이<input id="spaceY" type="number" value="2500"></label><label>Z 높이<input id="spaceZ" type="number" value="2500"></label></div>
+  <div class="sec quick-sec">
+    <h3><span>선택 객체 빠른 보기</span><button id="refocusBtn" class="mini-btn" disabled>선택 줌</button></h3>
+    <div class="pad">
+      <div id="objectPreview"><div id="previewEmpty">객체를 클릭하면<br>여기에 확대 미리보기가 표시됩니다.</div></div>
+      <div class="quick-head"><b id="quickName">선택 없음</b><span id="quickKind">객체를 클릭하세요</span></div>
+      <div class="quick-size-grid">
+        <div><span class="x">X</span><b id="quickX">-</b><small>mm</small></div>
+        <div><span class="y">Y</span><b id="quickY">-</b><small>mm</small></div>
+        <div><span class="z">Z</span><b id="quickZ">-</b><small>mm</small></div>
+      </div>
+      <div class="quick-pos-grid">
+        <span>중심 X <b id="quickPX">-</b></span>
+        <span>중심 Y <b id="quickPY">-</b></span>
+        <span>중심 Z <b id="quickPZ">-</b></span>
+      </div>
+      <label class="checkline"><input id="autoZoom" type="checkbox" checked> 객체 클릭 시 메인 화면 자동 확대</label>
+    </div>
+  </div>
+
+  <div class="sec control-sec"><h3>공간</h3><div class="pad">
+    <div class="slider-control axis-x">
+      <div class="slider-head"><span>X 폭</span><input id="spaceX" type="number" value="2500" min="500" max="5000" step="100"></div>
+      <input id="spaceXRange" class="range" type="range" min="500" max="5000" step="100" value="2500">
+    </div>
+    <div class="slider-control axis-y">
+      <div class="slider-head"><span>Y 길이</span><input id="spaceY" type="number" value="2500" min="500" max="5000" step="100"></div>
+      <input id="spaceYRange" class="range" type="range" min="500" max="5000" step="100" value="2500">
+    </div>
+    <div class="slider-control axis-z">
+      <div class="slider-head"><span>Z 높이</span><input id="spaceZ" type="number" value="2500" min="500" max="5000" step="100"></div>
+      <input id="spaceZRange" class="range" type="range" min="500" max="5000" step="100" value="2500">
+    </div>
     <div class="row"><button id="applySpace">공간 적용</button></div>
+    <div class="hint">슬라이더를 움직이면 작업공간 크기가 실시간 반영됩니다.</div>
   </div></div>
 
-  <div class="sec"><h3>기본 구조</h3><div class="pad">
+  <div class="sec control-sec"><h3>기본 구조</h3><div class="pad">
     <label>구조 이름<input id="frameName" value="침대 프레임"></label>
-    <div class="g3"><label>폭 X<input id="frameW" type="number" value="900"></label><label>길이 Y<input id="frameL" type="number" value="2000"></label><label>높이 Z<input id="frameH" type="number" value="250"></label></div>
-    <div class="g3"><label>각관 폭<input id="railW" type="number" value="20"></label><label>각관 높이<input id="railH" type="number" value="40"></label><label>가로바 수<input id="crossCount" type="number" value="8"></label></div>
+    <div class="slider-control axis-x">
+      <div class="slider-head"><span>폭 X</span><input id="frameW" type="number" value="900" min="500" max="1500" step="10"></div>
+      <input id="frameWRange" class="range" type="range" min="500" max="1500" step="10" value="900">
+    </div>
+    <div class="slider-control axis-y">
+      <div class="slider-head"><span>길이 Y</span><input id="frameL" type="number" value="2000" min="1000" max="2500" step="10"></div>
+      <input id="frameLRange" class="range" type="range" min="1000" max="2500" step="10" value="2000">
+    </div>
+    <div class="slider-control axis-z">
+      <div class="slider-head"><span>높이 Z</span><input id="frameH" type="number" value="250" min="100" max="600" step="10"></div>
+      <input id="frameHRange" class="range" type="range" min="100" max="600" step="10" value="250">
+    </div>
+    <div class="slider-control compact">
+      <div class="slider-head"><span>각관 폭</span><input id="railW" type="number" value="20" min="10" max="60" step="1"></div>
+      <input id="railWRange" class="range" type="range" min="10" max="60" step="1" value="20">
+    </div>
+    <div class="slider-control compact">
+      <div class="slider-head"><span>각관 높이</span><input id="railH" type="number" value="40" min="10" max="80" step="1"></div>
+      <input id="railHRange" class="range" type="range" min="10" max="80" step="1" value="40">
+    </div>
+    <div class="slider-control compact">
+      <div class="slider-head"><span>가로바 수</span><input id="crossCount" type="number" value="8" min="0" max="16" step="1"></div>
+      <input id="crossCountRange" class="range" type="range" min="0" max="16" step="1" value="8">
+    </div>
     <div class="row"><button id="buildFrame">구조 다시 배치</button></div>
-    <div class="hint">현재 프레임 기준: 외부 900×2000mm, 내부 폭 860mm, 높이 250mm. 가로바 상세 위치는 임시입니다.</div>
+    <div class="hint">현재 기준: 외부 900×2000mm, 내부 폭 860mm, 높이 250mm. 가로바 상세 위치는 임시입니다.</div>
   </div></div>
 
   <div class="sec"><h3>직육면체 추가</h3><div class="pad">
@@ -79,7 +132,7 @@
 
 <div id="vp">
   <div id="info"><strong id="infoTitle">선택 객체</strong><div id="infoBody"></div></div>
-  <div id="help">객체 클릭 → 선택 + XYZ 치수 표시<br><b>이동</b>: 빨강 X / 초록 Y / 파랑 Z 화살표<br><b>회전</b>: 회전 링<br><b>다중 선택</b>: Shift+클릭</div>
+  <div id="help">객체 클릭 → 자동 확대 + 왼쪽 미리보기<br><b>이동</b>: 빨강 X / 초록 Y / 파랑 Z 화살표<br><b>회전</b>: 회전 링<br><b>다중 선택</b>: Shift+클릭</div>
   <div id="shortcutPanel"><strong>CAD 단축키</strong><div class="shortgrid">
     <kbd>Ctrl+Z</kbd><span>실행 취소</span><kbd>Ctrl+Y</kbd><span>다시 실행</span>
     <kbd>Ctrl+Shift+Z</kbd><span>다시 실행</span><kbd>Ctrl+C</kbd><span>객체 복사</span>
