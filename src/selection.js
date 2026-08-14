@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import {CAD} from "./core.js";
 import "./objects.js";
+import "./history.js";
+import "./dimensions.js";
 
 CAD.topSelectable=o=>{let x=o;while(x?.userData?.groupParent)x=x.userData.groupParent;return x;};
 CAD.clearMultiVisuals=()=>{CAD.multiBoxes.forEach(b=>CAD.scene.remove(b));CAD.multiBoxes=[];};
@@ -25,22 +27,23 @@ CAD.refreshSelectedUI=()=>{
   CAD.$("infoTitle").textContent=d.name;let extra="";
   if(d.kind==="hub"&&d.hub){const h=d.hub;extra=`<br><b>허브:</b> Ø${h.od} × ${h.t}T · 축홀 Ø${h.bore} · PCD${h.pcd}<br>전면 ${h.front} · 측면 ${h.side}`;CAD.$("selNote").textContent="기존 치수/사진 기준으로 외형과 홀 위치를 표현했습니다. 실제 M3/M4 나사산 깊이는 실측 후 확정해야 합니다.";}
   else if(d.kind==="group")CAD.$("selNote").textContent=`${(d.members||[]).length}개 객체가 묶여 있습니다. 이동·회전하면 함께 움직입니다.`;
-  else CAD.$("selNote").textContent=d.locked?"기본 프레임 부품입니다. 구조 다시 배치 시 초기 위치로 돌아갑니다.":"XYZ 화살표 드래그 또는 중심 좌표 입력으로 이동할 수 있습니다.";
+  else CAD.$("selNote").textContent=d.locked?"기본 프레임 부품입니다. 구조 다시 배치 시 초기 위치로 돌아갑니다.":"XYZ 화살표 드래그, 중심 좌표 입력, 방향키로 이동할 수 있습니다.";
   CAD.$("infoBody").innerHTML=`${kind}<br>크기 X ${s.x.toFixed(1)} / Y ${s.y.toFixed(1)} / Z ${s.z.toFixed(1)} mm<br>중심 X ${d.px.toFixed(1)} / Y ${d.py.toFixed(1)} / Z ${d.pz.toFixed(1)} mm${extra}`;
   CAD.$("info").style.display="block";CAD.$("copyHub").disabled=d.kind!=="hub";
+  CAD.updateDimensions(CAD.selected);
 };
 
 CAD.selectObject=(o,preserveMulti=false)=>{
   if(!preserveMulti){CAD.multiSelected=o?[CAD.topSelectable(o)]:[];CAD.clearMultiVisuals();}
   CAD.selected=o?CAD.topSelectable(o):null;
   if(CAD.selectionBox){CAD.scene.remove(CAD.selectionBox);CAD.selectionBox=null;}
-  if(!CAD.selected){CAD.transform.detach();CAD.setInputsEnabled(false);CAD.$("copyHub").disabled=true;CAD.$("info").style.display="none";CAD.$("selKind").textContent="-";CAD.$("selSX").textContent=CAD.$("selSY").textContent=CAD.$("selSZ").textContent=CAD.$("selRot").textContent="-";if(!preserveMulti)CAD.multiSelected=[];CAD.updateGroupUI();return;}
+  if(!CAD.selected){CAD.transform.detach();CAD.clearDimensions();CAD.setInputsEnabled(false);CAD.$("copyHub").disabled=true;CAD.$("info").style.display="none";CAD.$("selKind").textContent="-";CAD.$("selSX").textContent=CAD.$("selSY").textContent=CAD.$("selSZ").textContent=CAD.$("selRot").textContent="-";if(!preserveMulti)CAD.multiSelected=[];CAD.updateGroupUI();return;}
   CAD.selectionBox=new THREE.BoxHelper(CAD.selected,0x1e6fa8);CAD.scene.add(CAD.selectionBox);CAD.transform.attach(CAD.selected);CAD.setInputsEnabled(true);CAD.refreshSelectedUI();CAD.updateGroupUI();
 };
 CAD.clearSelection=()=>CAD.selectObject(null);
 
 CAD.showMultiSelection=()=>{
-  CAD.clearMultiVisuals();if(CAD.selectionBox){CAD.scene.remove(CAD.selectionBox);CAD.selectionBox=null;}CAD.transform.detach();CAD.selected=null;CAD.setInputsEnabled(false);CAD.$("copyHub").disabled=true;
+  CAD.clearDimensions();CAD.clearMultiVisuals();if(CAD.selectionBox){CAD.scene.remove(CAD.selectionBox);CAD.selectionBox=null;}CAD.transform.detach();CAD.selected=null;CAD.setInputsEnabled(false);CAD.$("copyHub").disabled=true;
   CAD.$("info").style.display="block";CAD.$("infoTitle").textContent=`다중 선택 ${CAD.multiSelected.length}개`;CAD.$("infoBody").innerHTML=CAD.multiSelected.map(o=>`• ${o.userData.name}`).join("<br>");
   CAD.multiSelected.forEach(o=>{const b=new THREE.BoxHelper(o,0x1e6fa8);CAD.scene.add(b);CAD.multiBoxes.push(b);});CAD.$("selKind").textContent="다중 선택";CAD.$("selSX").textContent=CAD.$("selSY").textContent=CAD.$("selSZ").textContent=CAD.$("selRot").textContent="-";CAD.$("selNote").textContent="Ctrl+G 또는 그룹화 버튼을 누르면 하나의 객체 그룹이 됩니다.";CAD.updateGroupUI();
 };
@@ -51,19 +54,25 @@ CAD.toggleMultiObject=o=>{
 };
 
 function restoreOwners(child){child.traverse(c=>{if(c!==child)c.userData.owner=child;});}
+function attachGroup(g,members){
+  if(!g.parent)CAD.scene.add(g);if(!CAD.objects.includes(g))CAD.objects.push(g);g.updateMatrixWorld(true);
+  members.forEach(o=>{g.attach(o);CAD.removeObject(o);o.userData.groupParent=g;});g.userData.members=members;CAD.updateDataFromTransform(g);
+}
+function detachGroup(g,members){
+  members.forEach(o=>{CAD.scene.attach(o);delete o.userData.groupParent;restoreOwners(o);CAD.updateDataFromTransform(o);if(!CAD.objects.includes(o))CAD.objects.push(o);});CAD.removeObject(g);g.parent?.remove(g);
+}
+
 CAD.groupSelectedObjects=()=>{
   const members=[...CAD.multiSelected];if(members.length<2||members.some(o=>o.userData.locked))return;
   const center=new THREE.Vector3();members.forEach(o=>{const w=new THREE.Vector3();o.getWorldPosition(w);center.add(w);});center.multiplyScalar(1/members.length);
-  const g=new THREE.Group();CAD.scene.add(g);g.position.copy(center);g.updateMatrixWorld(true);
-  members.forEach(o=>{g.attach(o);CAD.removeObject(o);o.userData.groupParent=g;});
-  const name=CAD.$("groupName").value.trim()||`객체 그룹 ${CAD.groupSerial++}`,u=CAD.worldToUser(center);g.userData={name,kind:"group",members,px:u.x,py:u.y,pz:u.z,locked:false};CAD.objects.push(g);
-  CAD.multiSelected=[];CAD.clearMultiVisuals();CAD.selectObject(g);
+  const g=new THREE.Group();g.position.copy(center);g.updateMatrixWorld(true);const name=CAD.$("groupName").value.trim()||`객체 그룹 ${CAD.groupSerial++}`,u=CAD.worldToUser(center);g.userData={name,kind:"group",members,px:u.x,py:u.y,pz:u.z,locked:false};
+  attachGroup(g,members);CAD.multiSelected=[];CAD.clearMultiVisuals();CAD.selectObject(g);
+  CAD.pushCommand({label:"객체 그룹화",undo:()=>{CAD.clearSelection();detachGroup(g,members);CAD.multiSelected=members;CAD.showMultiSelection();},redo:()=>{CAD.clearMultiVisuals();attachGroup(g,members);CAD.multiSelected=[];CAD.selectObject(g);}});
 };
 
 CAD.ungroupSelectedObject=()=>{
-  if(CAD.selected?.userData.kind!=="group")return;const g=CAD.selected,members=[...(g.userData.members||[])];CAD.clearSelection();CAD.removeObject(g);
-  members.forEach(o=>{CAD.scene.attach(o);delete o.userData.groupParent;restoreOwners(o);CAD.updateDataFromTransform(o);CAD.objects.push(o);});CAD.scene.remove(g);CAD.multiSelected=members;
-  if(members.length>1)CAD.showMultiSelection();else if(members.length===1)CAD.selectObject(members[0],true);
+  if(CAD.selected?.userData.kind!=="group")return;const g=CAD.selected,members=[...(g.userData.members||[])];CAD.clearSelection();detachGroup(g,members);CAD.multiSelected=members;if(members.length>1)CAD.showMultiSelection();else if(members.length===1)CAD.selectObject(members[0],true);
+  CAD.pushCommand({label:"그룹 해제",undo:()=>{CAD.clearMultiVisuals();attachGroup(g,members);CAD.multiSelected=[];CAD.selectObject(g);},redo:()=>{CAD.clearSelection();detachGroup(g,members);CAD.multiSelected=members;if(members.length>1)CAD.showMultiSelection();}});
 };
 
 CAD.pickObject=e=>{
@@ -72,13 +81,17 @@ CAD.pickObject=e=>{
 };
 
 CAD.nudgeSelected=(dx,dy,dz,mult=1)=>{
-  if(!CAD.selected)return;const snap=Math.max(.1,+CAD.$("moveSnap").value||1)*mult,u=CAD.worldToUser(CAD.selected.position);
-  CAD.selected.position.copy(CAD.userToWorld(u.x+dx*snap,u.y+dy*snap,u.z+dz*snap));CAD.updateDataFromTransform(CAD.selected);CAD.refreshSelectedUI();CAD.selectionBox?.update();
+  if(!CAD.selected)return;const o=CAD.selected,before=CAD.captureTransform(o),snap=Math.max(.1,+CAD.$("moveSnap").value||1)*mult,u=CAD.worldToUser(o.position);
+  o.position.copy(CAD.userToWorld(u.x+dx*snap,u.y+dy*snap,u.z+dz*snap));CAD.updateDataFromTransform(o);CAD.refreshSelectedUI();CAD.selectionBox?.update();CAD.pushTransformCommand(o,before,CAD.captureTransform(o),"키보드 이동");
 };
 
 CAD.setMode=mode=>{CAD.transform.setMode(mode);CAD.$("moveMode").classList.toggle("active",mode==="translate");CAD.$("rotateMode").classList.toggle("active",mode==="rotate");CAD.$("status").textContent="모드: "+(mode==="translate"?"이동":"회전");};
 
-CAD.transform.addEventListener("dragging-changed",e=>{CAD.transforming=e.value;CAD.orbit.enabled=!e.value;if(!e.value){CAD.blockSelectUntil=performance.now()+180;if(CAD.selected){CAD.updateDataFromTransform(CAD.selected);CAD.refreshSelectedUI();CAD.selectionBox?.update();}}});
+CAD.transform.addEventListener("dragging-changed",e=>{
+  CAD.transforming=e.value;CAD.orbit.enabled=!e.value;
+  if(e.value&&CAD.selected)CAD.transformStart=CAD.captureTransform(CAD.selected);
+  if(!e.value){CAD.blockSelectUntil=performance.now()+180;if(CAD.selected){CAD.updateDataFromTransform(CAD.selected);CAD.refreshSelectedUI();CAD.selectionBox?.update();if(CAD.transformStart)CAD.pushTransformCommand(CAD.selected,CAD.transformStart,CAD.captureTransform(CAD.selected),CAD.transform.mode==="rotate"?"객체 회전":"객체 이동");CAD.transformStart=null;}}
+});
 CAD.transform.addEventListener("objectChange",()=>{if(CAD.selected){CAD.updateDataFromTransform(CAD.selected);CAD.refreshSelectedUI();CAD.selectionBox?.update();}});
 
 CAD.renderer.domElement.addEventListener("pointerdown",e=>{if(e.button===0)CAD.pointerDown={x:e.clientX,y:e.clientY};});
