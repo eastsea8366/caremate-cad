@@ -22,14 +22,39 @@ CAD.buildFrame=()=>{
   if(CAD.selected?.userData.kind==="frame")CAD.clearSelection?.();
   if(CAD.frameRoot){CAD.objects.filter(o=>o.userData.kind==="frame").forEach(CAD.removeObject);CAD.dispose(CAD.frameRoot);}
   CAD.frameRoot=new THREE.Group();CAD.scene.add(CAD.frameRoot);
+
   const W=+CAD.$("frameW").value||900,L=+CAD.$("frameL").value||2000,H=+CAD.$("frameH").value||250;
-  const rw=+CAD.$("railW").value||20,rh=+CAD.$("railH").value||40,n=Math.max(0,Math.round(+CAD.$("crossCount").value||0));
+  const rw=+CAD.$("railW").value||20,rh=+CAD.$("railH").value||40;
+  const n=Math.max(0,Math.round(+CAD.$("crossCount").value||10));
   const cx=CAD.SX/2,cy=CAD.SY/2,z=H-rh/2,xL=cx-W/2+rw/2,xR=cx+W/2-rw/2;
+
   CAD.makeBox(CAD.frameRoot,"좌측 외곽레일",rw,L,rh,xL,cy,z,"frame",0x30373d,true);
   CAD.makeBox(CAD.frameRoot,"우측 외곽레일",rw,L,rh,xR,cy,z,"frame",0x30373d,true);
   CAD.makeBox(CAD.frameRoot,"앞쪽 가로 프레임",W-2*rw,rw,rh,cx,cy-L/2+rw/2,z,"frame",0x30373d,true);
   CAD.makeBox(CAD.frameRoot,"뒤쪽 가로 프레임",W-2*rw,rw,rh,cx,cy+L/2-rw/2,z,"frame",0x30373d,true);
-  for(let i=1;i<=n;i++)CAD.makeBox(CAD.frameRoot,`가로 지지대 ${i}`,W-2*rw,18,18,cx,cy-L/2+L*i/(n+1),H-9,"frame",0x66737e,true);
+
+  // 실물 기준 가운데 지지대: 총 10개, 침대 양쪽 절반에 5개씩, 각관 단면 10×20 mm.
+  // 개수를 바꿔도 중앙 접힘부를 기준으로 두 절반에 최대한 균등하게 나눠 배치한다.
+  const supportY=10,supportZ=20,supportZCenter=H-supportZ/2;
+  const firstCount=Math.ceil(n/2),secondCount=Math.floor(n/2);
+  const firstStart=cy-L/2+rw,firstEnd=cy;
+  const secondStart=cy,secondEnd=cy+L/2-rw;
+
+  const placeSupports=(count,start,end,prefix,startIndex)=>{
+    if(count<=0)return startIndex;
+    const step=(end-start)/count;
+    for(let i=0;i<count;i++){
+      const y=start+step*(i+.5);
+      CAD.makeBox(CAD.frameRoot,`${prefix} 지지대 ${i+1}`,W-2*rw,supportY,supportZ,cx,y,supportZCenter,"frame",0x66737e,true);
+      startIndex++;
+    }
+    return startIndex;
+  };
+
+  let supportIndex=1;
+  supportIndex=placeSupports(firstCount,firstStart,firstEnd,"전반부",supportIndex);
+  placeSupports(secondCount,secondStart,secondEnd,"후반부",supportIndex);
+
   const legH=H-rh,lx=[cx-W/2+20,cx+W/2-20],ly=[cy-L/2+55,cy+L/2-55];let idx=1;
   for(const x of lx)for(const y of ly)CAD.makeBox(CAD.frameRoot,`다리 ${idx++}`,40,40,legH,x,y,legH/2,"frame",0x343b41,true);
 };
