@@ -5,6 +5,17 @@ import "./selection.js";
 import "./sidebar.js";
 import "./input-controls.js";
 
+// 실물 침대 프레임 기준: 가운데 지지대 총 10개(절반당 5개), 각관 단면 10×20 mm.
+const crossCountInput=CAD.$("crossCount"),crossCountRange=CAD.$("crossCountRange");
+if(crossCountInput){
+  crossCountInput.value="10";
+  if(crossCountRange)crossCountRange.value="10";
+  const label=crossCountInput.closest(".slider-head")?.querySelector("span");
+  if(label)label.textContent="가운데 지지대 수";
+  const hint=crossCountInput.closest(".sec")?.querySelector(".hint");
+  if(hint)hint.textContent="현재 기준: 외부 900×2000mm, 내부 폭 860mm, 높이 250mm. 가운데 지지대는 총 10개(양쪽 절반 5개씩), 단면 10×20mm입니다.";
+}
+
 CAD.$("applySpace").onclick=()=>CAD.rebuildSpace(true);
 CAD.$("buildFrame").onclick=CAD.buildFrame;
 
